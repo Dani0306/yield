@@ -25,9 +25,11 @@ body {
   color: var(--foreground);
 }
 
-/* 1px white gradient border that fades from top-left to bottom-right.
-   Works over images and with rounded corners. Needs `relative` on the element. */
+/* 1px white gradient border for items (buttons, tiles, inputs).
+   Fades from top-left to bottom-right and follows rounded corners. */
 @utility border-gradient {
+  position: relative;
+
   &::before {
     content: "";
     position: absolute;
