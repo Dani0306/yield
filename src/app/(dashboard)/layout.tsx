@@ -1,3 +1,10 @@
-export default function DashboardLayout({ children }: LayoutProps<"/">) {
-  return <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>;
+import { redirect } from "next/navigation";
+import DashboardShell from "@/components/layout/sidebar/DashboardShell";
+import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+
+export default async function DashboardLayout({ children }: LayoutProps<"/">) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  return <DashboardShell user={user}>{children}</DashboardShell>;
 }

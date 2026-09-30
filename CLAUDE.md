@@ -100,7 +100,7 @@ Placement rules:
 - Enable row-level security on every table; policies restrict rows to `auth.uid() = user_id`.
 - Keep schema changes as SQL migrations in `supabase/migrations/`, never ad-hoc edits in the dashboard.
 - Keep generated types in `src/types/database.types.ts` (`supabase gen types typescript`), and use them in all queries.
-- Keys go in `.env.local` (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`). Never commit secrets or use the service-role key in client code.
+- Keys go in `.env.local` (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). Never commit secrets or use the service-role key in client code.
 
 ## Code conventions
 
