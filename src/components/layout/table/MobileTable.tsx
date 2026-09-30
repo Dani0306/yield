@@ -9,6 +9,7 @@ const MobileTable = <T,>({
   getRowKey,
   onRowClick,
   emptyMessage = "No data",
+  renderMobileRow,
 }: TableProps<T>) => {
   if (rows.length === 0) {
     return (
@@ -30,21 +31,25 @@ const MobileTable = <T,>({
               : ""
           }`}
         >
-          <dl className="flex flex-col gap-1.5">
-            {columns.map((column) => (
-              <div
-                key={column.key}
-                className="flex items-baseline justify-between gap-4"
-              >
-                <dt className="shrink-0 text-gray-500">{column.header}</dt>
-                <dd
-                  className={`min-w-0 truncate text-right ${column.cellClassName ?? ""}`}
+          {renderMobileRow ? (
+            renderMobileRow(row)
+          ) : (
+            <dl className="flex flex-col gap-1.5">
+              {columns.map((column) => (
+                <div
+                  key={column.key}
+                  className="flex items-baseline justify-between gap-4"
                 >
-                  {renderCell(column, row)}
-                </dd>
-              </div>
-            ))}
-          </dl>
+                  <dt className="shrink-0 text-gray-500">{column.header}</dt>
+                  <dd
+                    className={`min-w-0 truncate text-right ${column.cellClassName ?? ""}`}
+                  >
+                    {renderCell(column, row)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </li>
       ))}
     </ul>
