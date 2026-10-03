@@ -10,6 +10,7 @@ const MobileTable = <T,>({
   onRowClick,
   emptyMessage = "No data",
   renderMobileRow,
+  getRowClassName,
 }: TableProps<T>) => {
   if (rows.length === 0) {
     return (
@@ -25,7 +26,7 @@ const MobileTable = <T,>({
         <li
           key={getRowKey(row)}
           {...clickableProps(row, onRowClick)}
-          className={`border-b border-gray-200 py-4 ${
+          className={`border-b border-gray-200 py-4 ${getRowClassName?.(row) ?? ""} ${
             onRowClick
               ? "cursor-pointer transition-colors hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
               : ""

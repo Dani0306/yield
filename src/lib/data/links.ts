@@ -33,9 +33,16 @@ export const links: NavLink[] = [
     keywords: ["new", "add", "create", "place", "bet"],
   },
   {
-    label: "Stats",
-    href: "/stats",
+    label: "Draw odds",
+    href: "/draw-odds",
     icon: ChartColumn,
-    keywords: ["stats", "statistics", "analytics", "roi", "profit", "charts"],
+    keywords: ["draw", "odds", "model", "predictions"],
   },
+
+  // {
+  //   label: "Stats",
+  //   href: "/stats",
+  //   icon: ChartColumn,
+  //   keywords: ["stats", "statistics", "analytics", "roi", "profit", "charts"],
+  // },
 ];

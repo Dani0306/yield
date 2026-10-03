@@ -1,4 +1,5 @@
 import BetModal from "../bets/BetModal";
+import CreateBet from "../bets/CreateBet";
 import ConfirmModal from "./ConfirmModal";
 
 // Every modal the app can open by name. To add one:
@@ -7,4 +8,5 @@ import ConfirmModal from "./ConfirmModal";
 export const modals = {
   confirm: ConfirmModal,
   bet: BetModal,
+  createBet: CreateBet,
 };

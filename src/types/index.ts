@@ -10,9 +10,19 @@ export const PROGRESSION_STATUSES = [
   "abandoned",
 ] as const;
 
+// What happened in a match when settling a bet. Bets are always on the draw,
+// so a draw wins and a home or away win loses.
+export const SETTLE_OUTCOMES = [
+  "draw",
+  "home_win",
+  "away_win",
+  "void",
+] as const;
+
 export type BetStatus = (typeof BET_STATUSES)[number];
 export type BetResult = (typeof BET_RESULTS)[number];
 export type ProgressionStatus = (typeof PROGRESSION_STATUSES)[number];
+export type SettleOutcome = (typeof SETTLE_OUTCOMES)[number];
 
 // Columns the database calculates; never sent on insert or update.
 type BetGeneratedColumns = "advantage" | "profit" | "profit_units";
@@ -67,6 +77,16 @@ export type BetInsert = Omit<
   status?: BetStatus;
   result?: BetResult | null;
 };
+// What the new bet form sends. The progression, attempt number, stake and
+// amount are worked out on the server from the staking rule.
+export type CreateBetInput = {
+  match_date: string;
+  home_team: string;
+  away_team: string;
+  odds: number;
+  draw_percentage: number;
+};
+
 export type BetUpdate = Omit<
   TablesUpdate<"bets">,
   "status" | "result" | BetGeneratedColumns
@@ -123,3 +143,16 @@ export type DashboardData = {
   profitOverTime: { date: string; cumulativeProfit: number; note?: string }[];
   recentProgressions: ProgressionWithStats[];
 };
+
+// One draw candidate from the prediction model (a row of its CSV export).
+export type ModelResult = Tables<"model_results">;
+export type ModelResultInsert = TablesInsert<"model_results">;
+// The columns that identify one result (the table's unique key).
+export type ModelResultKey = Pick<
+  ModelResult,
+  "match_date" | "home_team" | "away_team" | "scraped_at"
+>;
+
+export interface SearchParamProps {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}

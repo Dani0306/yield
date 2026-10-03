@@ -9,7 +9,9 @@ import {
 } from "@/lib/utils/fn";
 import type { DashboardData } from "@/types";
 import { Section, Stat, StatGrid } from "./DashboardUI";
-import { matchName } from "./betDisplay";
+import { matchName } from "@/lib/utils/bets";
+import { useModal } from "../providers/ModalProvider";
+import PageButton from "../ui/PageButton";
 
 type CurrentProgressionData = NonNullable<DashboardData["currentProgression"]>;
 
@@ -47,8 +49,15 @@ const Row = ({
   </div>
 );
 
-const CurrentBet = ({ progression }: { progression: CurrentProgressionData }) => {
+const CurrentBet = ({
+  progression,
+}: {
+  progression: CurrentProgressionData;
+}) => {
   const { currentBet, investedAmount } = progression;
+
+  const { openModal } = useModal();
+
   if (!currentBet) return null;
 
   const { bet, potentialReturn } = currentBet;
@@ -64,35 +73,49 @@ const CurrentBet = ({ progression }: { progression: CurrentProgressionData }) =>
     <div className="flex flex-col gap-4 border-t border-gray-200 pt-6">
       <div className="flex items-baseline justify-between gap-4">
         <span className="text-xs text-gray-500">Current bet · Pending</span>
-        <Link
-          href={`/bets/${bet.id}`}
+        <span
+          onClick={() => openModal("bet", { bet })}
           className="text-xs text-black underline-offset-4 hover:underline"
         >
-          View bet
-        </Link>
+          View Bet
+        </span>
       </div>
 
       {/* Desktop */}
       <div className="hidden grid-cols-[2fr_1fr_1.2fr_1fr_1.4fr] gap-6 lg:grid">
         <div className="flex min-w-0 flex-col gap-1.5">
           <span className="text-xs text-gray-500">Match</span>
-          <span className="truncate text-base text-black">{matchName(bet)}</span>
-          <span className="text-xs text-gray-500">{formatDate(bet.match_date)}</span>
+          <span className="truncate text-base text-black">
+            {matchName(bet)}
+          </span>
+          <span className="text-xs text-gray-500">
+            {formatDate(bet.match_date)}
+          </span>
         </div>
         <Field label="Odds" value={bet.odds.toFixed(2)} />
         <Field label="Stake" value={stake} sub={units} />
         <Field label="Advantage" value={advantage} />
-        <Field label="If it wins" value={formatMoney(potentialReturn)} sub={ifWinsSub} />
+        <Field
+          label="If it wins"
+          value={formatMoney(potentialReturn)}
+          sub={ifWinsSub}
+        />
       </div>
 
       {/* Mobile */}
       <div className="flex flex-col lg:hidden">
         <span className="text-base text-black">{matchName(bet)}</span>
-        <span className="mb-2 text-xs text-gray-500">{formatDate(bet.match_date)}</span>
+        <span className="mb-2 text-xs text-gray-500">
+          {formatDate(bet.match_date)}
+        </span>
         <Row label="Odds" value={bet.odds.toFixed(2)} />
         <Row label="Stake" value={`${stake} · ${units}`} />
         <Row label="Advantage" value={advantage} />
-        <Row label="If it wins" value={formatMoney(potentialReturn)} sub={ifWinsSub} />
+        <Row
+          label="If it wins"
+          value={formatMoney(potentialReturn)}
+          sub={ifWinsSub}
+        />
       </div>
     </div>
   );
@@ -103,18 +126,16 @@ type CurrentProgressionProps = {
   currentBank: number;
 };
 
-const CurrentProgression = ({ progression, currentBank }: CurrentProgressionProps) => {
+const CurrentProgression = ({
+  progression,
+  currentBank,
+}: CurrentProgressionProps) => {
   if (!progression) {
     return (
       <Section title="Current progression">
         <div className="flex flex-col items-start gap-4 border-t border-gray-200 pt-6">
           <p className="text-sm text-gray-500">No active progression.</p>
-          <Link
-            href="/bets/new"
-            className="bg-black px-4 py-3 text-sm font-light text-white transition-colors hover:bg-neutral-800"
-          >
-            Start progression
-          </Link>
+          <PageButton className="text-sm" text="Start progression" />
         </div>
       </Section>
     );

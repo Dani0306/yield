@@ -2,7 +2,6 @@
 
 import PageContainer from "../layout/PageContainer";
 import Table, { type TableColumn } from "../layout/table/Table";
-import { mockBets } from "@/lib/data/mock-bets";
 import { formatMoney, formatShortDate, withSign } from "@/lib/utils/fn";
 import type { Bet, BetStatus } from "@/types";
 import { useModal } from "../providers/ModalProvider";
@@ -99,16 +98,17 @@ const tableColumns: TableColumn<Bet>[] = [
   },
 ];
 
-const BetsContent = () => {
+const BetsContent = ({ bets }: { bets: Bet[] }) => {
   const { openModal } = useModal();
 
   return (
     <PageContainer title="Bets" description="See the full bet history">
       <Table
         columns={tableColumns}
-        rows={mockBets}
+        rows={bets}
         getRowKey={(bet) => bet.id}
-        onRowClick={(bet) => openModal("bet", bet)}
+        onRowClick={(bet) => openModal("bet", { bet })}
+        emptyMessage="No bets yet"
       />
     </PageContainer>
   );

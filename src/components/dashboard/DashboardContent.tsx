@@ -1,8 +1,8 @@
 "use client";
 
 import PageContainer from "../layout/PageContainer";
-import { dashboardData } from "@/lib/data/mock-dashboard";
 import { formatDate } from "@/lib/utils/fn";
+import type { DashboardData } from "@/types";
 import CurrentProgression from "./CurrentProgression";
 import OverallStats from "./OverallStats";
 import EdgeCheck from "./EdgeCheck";
@@ -10,10 +10,14 @@ import ProgressionBetsTable from "./ProgressionBetsTable";
 import ProfitChart from "./ProfitChart";
 import PastProgressionsTable from "./PastProgressionsTable";
 
-const DashboardContent = () => {
-  // Mock data for now; later this comes from Supabase in the same shape.
-  const { currentProgression, overview, edge, profitOverTime, recentProgressions } =
-    dashboardData;
+const DashboardContent = ({ data }: { data: DashboardData }) => {
+  const {
+    currentProgression,
+    overview,
+    edge,
+    profitOverTime,
+    recentProgressions,
+  } = data;
 
   return (
     <PageContainer

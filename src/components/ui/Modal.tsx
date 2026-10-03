@@ -8,11 +8,18 @@ const sizes = {
   sm: "sm:max-w-sm",
   md: "sm:max-w-md",
   lg: "sm:max-w-2xl",
+  xl: "sm:max-w-4xl",
 };
 
 type ModalProps = {
+  // Small text above the title, e.g. "Progression #2 · Attempt 4".
+  eyebrow?: React.ReactNode;
   title?: string;
-  description?: string;
+  // "lg" for detail views where the title is the headline.
+  titleSize?: "md" | "lg";
+  description?: React.ReactNode;
+  // Buttons shown in the header, beside the title on desktop.
+  actions?: React.ReactNode;
   // Called on Esc, backdrop click or the close button.
   onClose: () => void;
   // Width from the sm breakpoint up. Below it the modal is always full screen.
@@ -24,8 +31,11 @@ type ModalProps = {
 // Shared modal shell built on the native <dialog>: the browser handles Esc,
 // focus trapping, returning focus, stacking above everything and the backdrop.
 const Modal = ({
+  eyebrow,
   title,
+  titleSize = "md",
   description,
+  actions,
   onClose,
   size = "md",
   className = "",
@@ -53,26 +63,39 @@ const Modal = ({
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className={`m-0 h-dvh max-h-none w-full max-w-none overflow-y-auto border-0 bg-white p-0 text-gray-900 backdrop:bg-black/60 sm:m-auto sm:h-auto sm:max-h-[calc(100dvh-4rem)] sm:w-[calc(100%-2rem)] sm:rounded-md sm:border sm:border-gray-200 ${sizes[size]} ${className}`}
+      className={`m-0 h-dvh max-h-none w-full max-w-none overflow-y-auto border-0 bg-white p-0 text-gray-900 backdrop:bg-black/60 sm:m-auto sm:h-fit sm:max-h-[calc(100dvh-4rem)] sm:w-[calc(100%-2rem)] sm:rounded-md sm:border sm:border-gray-200 ${sizes[size]} ${className}`}
     >
       <div className="flex flex-col gap-5 p-6">
         {/* Always rendered: full screen on phones has no backdrop to tap. */}
         <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            {eyebrow && <span className="text-xs text-gray-500">{eyebrow}</span>}
             {title && (
-              <h2 id={titleId} className="text-base font-medium text-black">
+              <h2
+                id={titleId}
+                className={
+                  titleSize === "lg"
+                    ? "text-2xl font-medium tracking-tight text-black sm:text-3xl"
+                    : "text-base font-medium text-black"
+                }
+              >
                 {title}
               </h2>
             )}
             {description && (
-              <p
+              <div
                 id={descriptionId}
                 className="text-sm font-light text-gray-500"
               >
                 {description}
-              </p>
+              </div>
             )}
           </div>
+          {actions && (
+            <div className="hidden shrink-0 items-center gap-2 self-center sm:flex">
+              {actions}
+            </div>
+          )}
           <button
             onClick={onClose}
             aria-label="Close"
@@ -81,6 +104,8 @@ const Modal = ({
             <X size={16} strokeWidth={1.5} />
           </button>
         </div>
+        {/* On phones the actions get their own row under the title. */}
+        {actions && <div className="flex items-center gap-2 sm:hidden">{actions}</div>}
         {children}
       </div>
     </dialog>

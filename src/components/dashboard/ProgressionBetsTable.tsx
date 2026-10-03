@@ -18,7 +18,7 @@ import {
   profitText,
   statusClass,
   statusLabels,
-} from "./betDisplay";
+} from "@/lib/utils/bets";
 
 const advantageText = (bet: Bet) =>
   withSign(bet.advantage, (n) => formatPercent(n, 1));
@@ -127,7 +127,7 @@ const ProgressionBetsTable = ({
         columns={columns}
         rows={bets}
         getRowKey={(bet) => bet.id}
-        onRowClick={(bet) => openModal("bet", bet)}
+        onRowClick={(bet) => openModal("bet", { bet })}
         renderMobileRow={MobileRow}
         emptyMessage="No bets in this progression yet"
       />

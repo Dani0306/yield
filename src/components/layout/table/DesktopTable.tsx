@@ -13,6 +13,7 @@ const DesktopTable = <T,>({
   getRowKey,
   onRowClick,
   emptyMessage = "No data",
+  getRowClassName,
 }: TableProps<T>) => {
   return (
     <table
@@ -54,7 +55,7 @@ const DesktopTable = <T,>({
             <tr
               key={getRowKey(row)}
               {...clickableProps(row, onRowClick)}
-              className={`border-b border-gray-200 ${
+              className={`border-b border-gray-200 ${getRowClassName?.(row) ?? ""} ${
                 onRowClick
                   ? "cursor-pointer transition-colors hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
                   : ""

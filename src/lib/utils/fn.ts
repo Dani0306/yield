@@ -1,4 +1,4 @@
-import { User } from "@/types";
+import { ModelResult, User } from "@/types";
 
 // * Get profile initials
 export const getInitials = ({ first_name, last_name, email }: User) => {
@@ -30,7 +30,9 @@ const TIME_ZONE = "America/Bogota";
 
 const dateParts = (iso: string, formatter: Intl.DateTimeFormat) =>
   Object.fromEntries(
-    formatter.formatToParts(new Date(iso)).map(({ type, value }) => [type, value]),
+    formatter
+      .formatToParts(new Date(iso))
+      .map(({ type, value }) => [type, value]),
   );
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -43,6 +45,18 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 export const formatDate = (iso: string) => {
   const parts = dateParts(iso, dateFormatter);
   return `${parts.weekday} ${parts.day} ${parts.month}, ${parts.year}`;
+};
+
+// * Format a date with its time, e.g. Wed 30 Sep, 2026 · 13:00
+const timeFormatter = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: TIME_ZONE,
+});
+export const formatDateTime = (iso: string) => {
+  const parts = dateParts(iso, timeFormatter);
+  return `${formatDate(iso)} · ${parts.hour}:${parts.minute}`;
 };
 
 // * Format a short date without the year, e.g. 27 Sep
@@ -73,9 +87,41 @@ export const formatDateRange = (startIso: string, endIso: string | null) => {
   const start = dateParts(startIso, shortDateFormatter);
   if (!endIso) return `${start.day} ${start.month} – now`;
   const end = dateParts(endIso, shortDateFormatter);
-  if (start.day === end.day && start.month === end.month) return `${end.day} ${end.month}`;
-  if (start.month === end.month) return `${start.day} – ${end.day} ${end.month}`;
+  if (start.day === end.day && start.month === end.month)
+    return `${end.day} ${end.month}`;
+  if (start.month === end.month)
+    return `${start.day} – ${end.day} ${end.month}`;
   return `${start.day} ${start.month} – ${end.day} ${end.month}`;
+};
+
+// * Format the model's kick-off ("DD.MM. HH:MM"), e.g. 03.10. 13:00 → Oct 3, 13:00
+// Read straight from the text: it has no year or time zone, so turning it
+// into a Date would guess both. Unexpected text is returned as it came.
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+export const formatGameDate = (gameDate: string) => {
+  const match = gameDate
+    .trim()
+    .match(/^(\d{1,2})\.(\d{1,2})\.\s*(\d{1,2}):(\d{2})$/);
+  if (!match) return gameDate;
+
+  const [, day, month, hour, minute] = match;
+  const monthName = MONTHS[Number(month) - 1];
+  if (!monthName || Number(day) < 1 || Number(day) > 31) return gameDate;
+
+  return `${monthName} ${Number(day)}, ${hour.padStart(2, "0")}:${minute}`;
 };
 
 // * Format a month label for chart axes, e.g. Sep
@@ -83,7 +129,8 @@ const monthFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   timeZone: TIME_ZONE,
 });
-export const formatMonth = (iso: string) => monthFormatter.format(new Date(iso));
+export const formatMonth = (iso: string) =>
+  monthFormatter.format(new Date(iso));
 
 // * Format money compactly for chart axes, e.g. $50 K, $1,5 M
 // Built by hand: Intl's compact notation differs between Node and browsers
@@ -104,3 +151,20 @@ export const formatUnits = (value: number) => `${Number(value.toFixed(2))} u`;
 // * Format a percentage, e.g. 4.14%
 export const formatPercent = (value: number, digits = 2) =>
   `${value.toFixed(digits)}%`;
+
+// * Kick-off
+
+// The kick-off as a datetime input value: the date from match_date, the
+// time from game_date ("03.10. 13:00"). Date only when there's no time.
+
+// * Whether a result's match has already kicked off. Times are Colombian
+// (UTC−5 all year, no daylight saving).
+export const hasKickedOff = (r: ModelResult, now: number) =>
+  Date.parse(`${kickOff(r)}:00-05:00`) <= now;
+
+export const kickOff = (r: ModelResult) => {
+  const time = r.game_date.match(/(\d{1,2}):(\d{2})\s*$/);
+  return time
+    ? `${r.match_date}T${time[1].padStart(2, "0")}:${time[2]}`
+    : `${r.match_date}T00:00`;
+};

@@ -23,6 +23,8 @@ export type TableProps<T> = {
   onRowClick?: (row: T) => void;
   // Shown when there are no rows.
   emptyMessage?: React.ReactNode;
+  // Extra classes for a row, e.g. to gray out finished matches.
+  getRowClassName?: (row: T) => string;
   // Custom content for each mobile card. Defaults to one label/value line per column.
   renderMobileRow?: (row: T) => React.ReactNode;
 };
