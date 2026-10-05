@@ -20,7 +20,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Bet Tracker",
+  title: "Yield",
   description: "Track every bet and the profit of your strategy.",
 };
 

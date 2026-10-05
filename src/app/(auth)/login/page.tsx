@@ -19,9 +19,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full h-screen flex items-center justify-center">
+    <div className="w-full h-screen flex items-center justify-center px-6">
       <form
-        className="flex flex-col space-y-2 items-center"
+        className="flex w-full max-w-85 flex-col space-y-2 items-center"
         onSubmit={handleSubmit}
       >
         <Logo size="md" />
@@ -31,7 +31,7 @@ export default function LoginPage() {
           </div>
         ) : (
           <>
-            <div className="mt-5 space-y-3 w-85">
+            <div className="mt-5 space-y-3 w-full max-w-85">
               <Input
                 icon={User}
                 value={email}

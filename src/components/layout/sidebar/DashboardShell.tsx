@@ -62,7 +62,7 @@ const DashboardShell = ({ user, children }: DashboardShellProps) => {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center px-4">
+        <header className="flex h-14 items-center px-5 md:px-4">
           <button
             onClick={() => setMobileOpen(true)}
             aria-label="Open sidebar"
@@ -81,7 +81,8 @@ const DashboardShell = ({ user, children }: DashboardShellProps) => {
           )}
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-8">
+        {/* Phones get wider side padding so content doesn't run edge to edge. */}
+        <main className="mx-auto w-full max-w-6xl flex-1 px-6 pb-12 md:px-4 md:pb-8">
           {children}
         </main>
       </div>
