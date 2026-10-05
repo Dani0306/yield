@@ -52,5 +52,7 @@ export const setResultAdded = async (key: ModelResultKey, added: boolean) => {
     }
   }
 
+  // The dashboard's next-event countdown is built from the selected results.
   revalidatePath("/draw-odds");
+  revalidatePath("/dashboard");
 };

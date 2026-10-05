@@ -9,6 +9,7 @@ export type ProfileInput = {
   last_name?: string;
   username?: string;
   total_budget?: number;
+  email_reminders?: boolean;
 };
 
 const NAME_MAX = 50;
@@ -53,6 +54,12 @@ export const updateProfile = async (
       return { error: "Your bankroll must be greater than 0" };
     if (budget > BUDGET_MAX) return { error: "That bankroll is too large" };
     update.total_budget = Math.round(budget);
+  }
+
+  if (input.email_reminders !== undefined) {
+    if (typeof input.email_reminders !== "boolean")
+      return { error: "Invalid reminder setting" };
+    update.email_reminders = input.email_reminders;
   }
 
   if (Object.keys(update).length === 0) return { error: null };

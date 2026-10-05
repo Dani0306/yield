@@ -297,6 +297,52 @@ const ProfileSection = ({ user }: { user: User }) => {
   );
 };
 
+// Saves as soon as the box is ticked: there is nothing else to batch it with.
+const NotificationsSection = ({ user }: { user: User }) => {
+  const [enabled, setEnabled] = useState(user.email_reminders);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  const toggle = (next: boolean) => {
+    setEnabled(next);
+    setError(null);
+    startTransition(async () => {
+      const result = await updateProfile({ email_reminders: next });
+      // Put the switch back if saving failed.
+      if (result.error) {
+        setEnabled(!next);
+        setError(result.error);
+      }
+    });
+  };
+
+  return (
+    <SettingsSection
+      title="Notifications"
+      description="A reminder email 10 minutes before a selected match kicks off, with the stake and the best odds collected. Matches you've already bet on are skipped."
+    >
+      <label className="flex cursor-pointer items-start gap-3">
+        <input
+          type="checkbox"
+          checked={enabled}
+          disabled={isPending}
+          onChange={(e) => toggle(e.target.checked)}
+          className="mt-0.5 size-4 shrink-0 cursor-pointer accent-black disabled:cursor-not-allowed"
+        />
+        <span className="flex flex-col gap-1">
+          <span className="text-sm text-black">Email me before kick-off</span>
+          <span className="text-xs text-gray-500">Sent to {user.email}</span>
+        </span>
+      </label>
+      {error && (
+        <p role="alert" className="text-sm text-red-700">
+          {error}
+        </p>
+      )}
+    </SettingsSection>
+  );
+};
+
 const AccountSection = ({ user }: { user: User }) => {
   const { isPending, signOutFn } = useSignOut();
 
@@ -326,15 +372,17 @@ const AccountSection = ({ user }: { user: User }) => {
   );
 };
 
-// The settings page: bankroll (drives every stake), profile and account.
+// The settings page: bankroll (drives every stake), profile, notifications
+// and account.
 const SettingsContent = ({ user }: { user: User }) => (
   <PageContainer
     title="Settings"
-    description="Your bankroll, profile and account."
+    description="Your bankroll, profile, notifications and account."
   >
     <div className="flex flex-col">
       <BankrollSection user={user} />
       <ProfileSection user={user} />
+      <NotificationsSection user={user} />
       <AccountSection user={user} />
     </div>
   </PageContainer>

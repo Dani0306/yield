@@ -124,6 +124,7 @@ export type Database = {
           home_team: string;
           home_used_split: boolean | null;
           id: number;
+          kick_off: string | null;
           lambda_away: number | null;
           lambda_home: number | null;
           league: string;
@@ -136,6 +137,7 @@ export type Database = {
           prob: number;
           prob_poisson: number | null;
           rank_gap: number | null;
+          reminder_sent_at: string | null;
           rho: number | null;
           score: number | null;
           scraped_at: string;
@@ -157,6 +159,7 @@ export type Database = {
           home_team: string;
           home_used_split?: boolean | null;
           id?: never;
+          kick_off?: never;
           lambda_away?: number | null;
           lambda_home?: number | null;
           league: string;
@@ -169,6 +172,7 @@ export type Database = {
           prob: number;
           prob_poisson?: number | null;
           rank_gap?: number | null;
+          reminder_sent_at?: string | null;
           rho?: number | null;
           score?: number | null;
           scraped_at: string;
@@ -191,6 +195,7 @@ export type Database = {
           home_team?: string;
           home_used_split?: boolean | null;
           id?: never;
+          kick_off?: never;
           lambda_away?: number | null;
           lambda_home?: number | null;
           league?: string;
@@ -203,6 +208,7 @@ export type Database = {
           prob?: number;
           prob_poisson?: number | null;
           rank_gap?: number | null;
+          reminder_sent_at?: string | null;
           rho?: number | null;
           score?: number | null;
           scraped_at?: string;
@@ -254,6 +260,7 @@ export type Database = {
         Row: {
           avatar_url: string | null;
           created_at: string;
+          email_reminders: boolean;
           first_name: string | null;
           id: string;
           last_name: string | null;
@@ -263,6 +270,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null;
           created_at?: string;
+          email_reminders?: boolean;
           first_name?: string | null;
           id: string;
           last_name?: string | null;
@@ -272,6 +280,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null;
           created_at?: string;
+          email_reminders?: boolean;
           first_name?: string | null;
           id?: string;
           last_name?: string | null;
@@ -330,7 +339,10 @@ export type Database = {
       };
     };
     Functions: {
-      [_ in never]: never;
+      claim_due_reminders: {
+        Args: never;
+        Returns: Database["public"]["Tables"]["model_results"]["Row"][];
+      };
     };
     Enums: {
       [_ in never]: never;
