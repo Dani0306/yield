@@ -194,6 +194,17 @@ export type DashboardData = {
 // One draw candidate from the prediction model (a row of its CSV export).
 export type ModelResult = Tables<"model_results">;
 export type ModelResultInsert = TablesInsert<"model_results">;
+// One bookmaker's prices for a model result (result_odds table).
+export type ResultOdds = Tables<"result_odds">;
+
+// What the app knows about a result's odds: when they were last checked
+// (null: never), whether an OddsPapi match was found, and the prices.
+export type ResultOddsSummary = {
+  checkedAt: string | null;
+  matched: boolean;
+  odds: ResultOdds[];
+};
+
 // The bet placed from a model result (see bets.model_result_id).
 export type ResultBet = { id: number; status: BetStatus };
 

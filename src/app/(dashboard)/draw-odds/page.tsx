@@ -4,15 +4,11 @@ import DrawOddsContent from "@/components/draw-odds/DrawOddsContent";
 import ErrorScreen from "@/components/layout/error/ErrorScreen";
 import { tryCatch } from "@/lib/utils/tryCatch";
 import type { ModelResult, SearchParamProps } from "@/types";
-import { getMatchOdds } from "@/actions/odds/getMatchOdds";
+import { getResultOdds } from "@/actions/odds/getResultOdds";
 
 const page = async ({ searchParams }: SearchParamProps) => {
   const params = await searchParams;
   const showingSelected = params?.filter === "selected";
-
-  const odds = await getMatchOdds();
-
-  console.log(odds);
 
   // The selected results are always needed: they block the unselected
   // matches that overlap them.
@@ -26,17 +22,22 @@ const page = async ({ searchParams }: SearchParamProps) => {
   if (error) return <ErrorScreen error={error} />;
   if (selectedError) return <ErrorScreen error={selectedError} />;
 
-  // Results you've already bet on show the bet's status instead of actions.
-  const [bets, betsError] = await tryCatch(
-    getResultBets(results.map((r) => r.id)),
-  );
+  // Results you've already bet on show the bet's status instead of actions;
+  // selected ones carry their bookmaker odds into the new bet form.
+  const selectedResults = showingSelected ? results : selected;
+  const [[bets, betsError], [odds, oddsError]] = await Promise.all([
+    tryCatch(getResultBets(results.map((r) => r.id))),
+    tryCatch(getResultOdds(selectedResults.map((r) => r.id))),
+  ]);
   if (betsError) return <ErrorScreen error={betsError} />;
+  if (oddsError) return <ErrorScreen error={oddsError} />;
 
   return (
     <DrawOddsContent
       results={results}
-      selected={showingSelected ? results : selected}
+      selected={selectedResults}
       bets={bets}
+      odds={odds}
     />
   );
 };

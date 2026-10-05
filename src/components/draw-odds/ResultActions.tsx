@@ -5,7 +5,7 @@ import { useModal } from "../providers/ModalProvider";
 import { useSelectResult } from "@/hooks/results/useSelectResult";
 import { kickOff } from "@/lib/utils/fn";
 import { statusLabels } from "@/lib/utils/bets";
-import type { ModelResult, ResultBet } from "@/types";
+import type { ModelResult, ResultBet, ResultOddsSummary } from "@/types";
 
 type ResultActionsProps = {
   result: ModelResult;
@@ -16,6 +16,8 @@ type ResultActionsProps = {
   clash?: ModelResult | null;
   // The bet already placed from this result. It replaces the actions.
   bet?: ResultBet | null;
+  // Bookmaker odds to compare in the new bet form.
+  odds?: ResultOddsSummary | null;
 };
 
 // Clicks and Enter/Space on these buttons stay here, so a clickable table
@@ -29,6 +31,7 @@ const ResultActions = ({
   onChange,
   clash,
   bet,
+  odds,
 }: ResultActionsProps) => {
   const { setSelected, isPending } = useSelectResult();
   const { openModal } = useModal();
@@ -97,6 +100,7 @@ const ResultActions = ({
             matchDate: kickOff(result),
             drawPercentage: result.draw_percentage,
             modelResultId: result.id,
+            odds: odds ?? undefined,
           })
         }
         className="rounded-md px-3! py-1.5! text-xs"

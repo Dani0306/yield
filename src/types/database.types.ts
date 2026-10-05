@@ -130,6 +130,8 @@ export type Database = {
           league_draw_rate: number | null;
           league_id: string;
           match_date: string;
+          odds_checked_at: string | null;
+          odds_fixture_id: string | null;
           method: string | null;
           prob: number;
           prob_poisson: number | null;
@@ -161,6 +163,8 @@ export type Database = {
           league_draw_rate?: number | null;
           league_id: string;
           match_date: string;
+          odds_checked_at?: string | null;
+          odds_fixture_id?: string | null;
           method?: string | null;
           prob: number;
           prob_poisson?: number | null;
@@ -193,6 +197,8 @@ export type Database = {
           league_draw_rate?: number | null;
           league_id?: string;
           match_date?: string;
+          odds_checked_at?: string | null;
+          odds_fixture_id?: string | null;
           method?: string | null;
           prob?: number;
           prob_poisson?: number | null;
@@ -202,6 +208,47 @@ export type Database = {
           scraped_at?: string;
         };
         Relationships: [];
+      };
+      result_odds: {
+        Row: {
+          away_odds: number | null;
+          bookmaker: string;
+          draw_odds: number;
+          fetched_at: string;
+          home_odds: number | null;
+          id: number;
+          model_result_id: number;
+          price_changed_at: string | null;
+        };
+        Insert: {
+          away_odds?: number | null;
+          bookmaker: string;
+          draw_odds: number;
+          fetched_at?: string;
+          home_odds?: number | null;
+          id?: never;
+          model_result_id: number;
+          price_changed_at?: string | null;
+        };
+        Update: {
+          away_odds?: number | null;
+          bookmaker?: string;
+          draw_odds?: number;
+          fetched_at?: string;
+          home_odds?: number | null;
+          id?: never;
+          model_result_id?: number;
+          price_changed_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "result_odds_model_result_id_fkey";
+            columns: ["model_result_id"];
+            isOneToOne: false;
+            referencedRelation: "model_results";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       profiles: {
         Row: {

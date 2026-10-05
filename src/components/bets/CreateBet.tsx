@@ -8,6 +8,8 @@ import { BOOKMAKERS } from "@/lib/data/bookmakers";
 import PageButton from "../ui/PageButton";
 import { createBet } from "@/actions/bets/createBet";
 import { formatPercent, withSign } from "@/lib/utils/fn";
+import OddsComparison from "./OddsComparison";
+import type { ResultOddsSummary } from "@/types";
 
 type CreateBetProps = {
   onClose: () => void;
@@ -19,6 +21,8 @@ type CreateBetProps = {
   drawPercentage?: number;
   // The Draw odds result this bet comes from, so the result shows its bet.
   modelResultId?: number;
+  // That result's bookmaker odds, shown as a comparison to pick from.
+  odds?: ResultOddsSummary;
 };
 
 // Muted green/red for the advantage; neutral when zero.
@@ -35,6 +39,7 @@ const CreateBet = ({
   matchDate = "",
   drawPercentage,
   modelResultId,
+  odds: resultOdds,
 }: CreateBetProps) => {
   const [home, setHome] = useState(homeTeam);
   const [away, setAway] = useState(awayTeam);
@@ -111,6 +116,17 @@ const CreateBet = ({
             setValue={setAway}
           />
         </div>
+        {modelResultId !== undefined && resultOdds && (
+          <OddsComparison
+            resultId={modelResultId}
+            initial={resultOdds}
+            selectedBookmaker={bookmaker}
+            onPick={(pickedBookmaker, drawOdds) => {
+              setBookmaker(pickedBookmaker);
+              setOdds(String(drawOdds));
+            }}
+          />
+        )}
         <Select
           label="Bookmaker"
           name="bookmaker"

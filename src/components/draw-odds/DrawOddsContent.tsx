@@ -5,7 +5,7 @@ import PageContainer from "../layout/PageContainer";
 import Table, { type TableColumn } from "../layout/table/Table";
 import ResultActions from "./ResultActions";
 import { formatGameDate, formatPercent, hasKickedOff } from "@/lib/utils/fn";
-import type { ModelResult, ResultBet } from "@/types";
+import type { ModelResult, ResultBet, ResultOddsSummary } from "@/types";
 import { useModal } from "../providers/ModalProvider";
 import { useState } from "react";
 import { findClash, kickOffTime } from "@/lib/utils/results";
@@ -15,7 +15,12 @@ const rowKey = (r: ModelResult) =>
 
 // A result, the selected match that blocks it and the bet placed from it
 // (null when there's none).
-type Row = ModelResult & { clash: ModelResult | null; bet: ResultBet | null };
+type Row = ModelResult & {
+  clash: ModelResult | null;
+  bet: ResultBet | null;
+  // Bookmaker odds collected when the result was selected.
+  odds: ResultOddsSummary | null;
+};
 
 const columns: TableColumn<Row>[] = [
   { key: "home_team", header: "Home", width: "18%" },
@@ -60,7 +65,9 @@ const columns: TableColumn<Row>[] = [
     header: "",
     width: "18%",
     align: "right",
-    render: (r) => <ResultActions result={r} clash={r.clash} bet={r.bet} />,
+    render: (r) => (
+      <ResultActions result={r} clash={r.clash} bet={r.bet} odds={r.odds} />
+    ),
   },
 ];
 
@@ -85,7 +92,7 @@ const MobileRow = (r: Row) => (
           : formatPercent(r.league_draw_rate * 100, 1)}
       </span>
     </div>
-    <ResultActions result={r} clash={r.clash} bet={r.bet} />
+    <ResultActions result={r} clash={r.clash} bet={r.bet} odds={r.odds} />
   </div>
 );
 
@@ -99,9 +106,16 @@ type DrawOddsContentProps = {
   selected: ModelResult[];
   // Bets placed from the listed results, keyed by result id.
   bets: Record<number, ResultBet>;
+  // Bookmaker odds of the selected results, keyed by result id.
+  odds: Record<number, ResultOddsSummary>;
 };
 
-const DrawOddsContent = ({ results, selected, bets }: DrawOddsContentProps) => {
+const DrawOddsContent = ({
+  results,
+  selected,
+  bets,
+  odds,
+}: DrawOddsContentProps) => {
   const { setFilter, hasFilter } = useFilters();
   const { openModal } = useModal();
   const showingSelected = hasFilter({ type: "filter", value: "selected" });
@@ -114,6 +128,7 @@ const DrawOddsContent = ({ results, selected, bets }: DrawOddsContentProps) => {
     ...r,
     clash: findClash(r, selected),
     bet: bets[r.id] ?? null,
+    odds: odds[r.id] ?? null,
   }));
 
   return (
@@ -146,8 +161,8 @@ const DrawOddsContent = ({ results, selected, bets }: DrawOddsContentProps) => {
         columns={columns}
         rows={rows}
         getRowKey={rowKey}
-        onRowClick={({ clash, bet, ...result }) =>
-          openModal("result", { result, clash, bet })
+        onRowClick={(row) =>
+          openModal("result", { result: row, clash: row.clash, bet: row.bet })
         }
         getRowClassName={(r) =>
           hasKickedOff(r, now) || r.clash ? "opacity-40" : ""
