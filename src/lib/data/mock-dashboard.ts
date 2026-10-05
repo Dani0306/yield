@@ -9,11 +9,66 @@ const STARTING_BANK = 2_000_000;
 
 // Active progression: four lost draws, the fifth bet still open.
 const currentBets = [
-  mockBet({ id: 101, progressionId: 16, attempt: 1, date: "2026-09-21", home: "Sevilla", away: "Villarreal", stake: 1, odds: 3.2, drawPercentage: 33, result: "home_win" }),
-  mockBet({ id: 102, progressionId: 16, attempt: 2, date: "2026-09-23", home: "Fiorentina", away: "Lazio", stake: 1, odds: 3.3, drawPercentage: 32, result: "away_win" }),
-  mockBet({ id: 103, progressionId: 16, attempt: 3, date: "2026-09-25", home: "Nottingham Forest", away: "Brighton", stake: 1.5, odds: 3.4, drawPercentage: 30.5, result: "away_win" }),
-  mockBet({ id: 104, progressionId: 16, attempt: 4, date: "2026-09-27", home: "Stuttgart", away: "Hoffenheim", stake: 2, odds: 3.6, drawPercentage: 28.5, result: "home_win" }),
-  mockBet({ id: 105, progressionId: 16, attempt: 5, date: "2026-10-02", home: "Real Sociedad", away: "Athletic Club", stake: 3, odds: 3.3, drawPercentage: 33, result: null }),
+  mockBet({
+    id: 101,
+    progressionId: 16,
+    attempt: 1,
+    date: "2026-09-21",
+    home: "Sevilla",
+    away: "Villarreal",
+    stake: 1,
+    odds: 3.2,
+    drawPercentage: 33,
+    result: "home_win",
+  }),
+  mockBet({
+    id: 102,
+    progressionId: 16,
+    attempt: 2,
+    date: "2026-09-23",
+    home: "Fiorentina",
+    away: "Lazio",
+    stake: 1,
+    odds: 3.3,
+    drawPercentage: 32,
+    result: "away_win",
+  }),
+  mockBet({
+    id: 103,
+    progressionId: 16,
+    attempt: 3,
+    date: "2026-09-25",
+    home: "Nottingham Forest",
+    away: "Brighton",
+    stake: 1.5,
+    odds: 3.4,
+    drawPercentage: 30.5,
+    result: "away_win",
+  }),
+  mockBet({
+    id: 104,
+    progressionId: 16,
+    attempt: 4,
+    date: "2026-09-27",
+    home: "Stuttgart",
+    away: "Hoffenheim",
+    stake: 2,
+    odds: 3.6,
+    drawPercentage: 28.5,
+    result: "home_win",
+  }),
+  mockBet({
+    id: 105,
+    progressionId: 16,
+    attempt: 5,
+    date: "2026-10-02",
+    home: "Real Sociedad",
+    away: "Athletic Club",
+    stake: 3,
+    odds: 3.3,
+    drawPercentage: 33,
+    result: null,
+  }),
 ];
 
 const pendingBet = currentBets[currentBets.length - 1];
@@ -33,6 +88,7 @@ const progressionStats = (
   end: string,
 ): ProgressionWithStats => ({
   progression_id: id,
+  progression_number: id,
   user_id: MOCK_USER_ID,
   status,
   start_date: `${start}T18:00:00Z`,
@@ -47,11 +103,13 @@ const progressionStats = (
 export const dashboardData: DashboardData = {
   currentProgression: {
     id: 16,
+    number: 16,
     attempt: pendingBet.attempt_number,
     longestProgressionAttempts: 5,
     investedAmount,
     investedUnits,
-    bankExposurePercent: Math.round((investedAmount / currentBank) * 10_000) / 100, // 4.14
+    bankExposurePercent:
+      Math.round((investedAmount / currentBank) * 10_000) / 100, // 4.14
     attemptsBankCanCover: 8,
     currentBet: {
       bet: pendingBet,
@@ -84,6 +142,22 @@ export const dashboardData: DashboardData = {
     averageAdvantagePercent: 1.35,
   },
 
+  nextEvent: null,
+
+  patterns: {
+    averageOdds: 3.31,
+    averageWinningAttempt: 2.6,
+    wonBets: 14,
+    highestAttempt: { attempt: 6, progressionNumber: 9 },
+    mostCommonScore: { score: "1-1", result: "draw", count: 9, of: 45 },
+    mostCommonDrawScore: { score: "1-1", count: 9, of: 14 },
+    topBookmakers: [
+      { name: "BetPlay", bets: 21 },
+      { name: "Betano", bets: 14 },
+      { name: "Wplay", bets: 10 },
+    ],
+  },
+
   // Cumulative profit after each progression closed, plus today.
   profitOverTime: [
     { date: "2026-05-31T18:00:00Z", cumulativeProfit: 0 },
@@ -98,7 +172,11 @@ export const dashboardData: DashboardData = {
     { date: "2026-08-10T18:00:00Z", cumulativeProfit: 128_000 },
     { date: "2026-08-16T18:00:00Z", cumulativeProfit: 140_500 },
     { date: "2026-08-26T18:00:00Z", cumulativeProfit: 152_000 },
-    { date: "2026-09-09T18:00:00Z", cumulativeProfit: 62_000, note: "#12 · abandoned" },
+    {
+      date: "2026-09-09T18:00:00Z",
+      cumulativeProfit: 62_000,
+      note: "#12 · abandoned",
+    },
     { date: "2026-09-12T18:00:00Z", cumulativeProfit: 85_500 },
     { date: "2026-09-19T18:00:00Z", cumulativeProfit: 96_500 },
     { date: "2026-09-24T18:00:00Z", cumulativeProfit: 110_000 },

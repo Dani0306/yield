@@ -42,5 +42,6 @@ export const deleteBet = async (betId: number) => {
 
   revalidatePath("/dashboard");
   revalidatePath("/bets");
+  revalidatePath("/draw-odds");
   return { error: null };
 };

@@ -13,7 +13,7 @@ type SectionProps = {
 export const Section = ({ title, meta, children }: SectionProps) => (
   <section className="flex flex-col gap-5">
     <div className="flex items-baseline justify-between gap-4">
-      <h2 className="text-sm font-medium text-black">{title}</h2>
+      <h2 className="text-base font-medium text-black">{title}</h2>
       {meta && <span className="text-xs text-gray-500">{meta}</span>}
     </div>
     {children}

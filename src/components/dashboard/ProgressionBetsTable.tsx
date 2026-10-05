@@ -110,19 +110,18 @@ const MobileRow = (bet: Bet) => (
 );
 
 const ProgressionBetsTable = ({
-  progressionId,
+  progressionNumber,
   bets,
+  title = "Current progression bets",
 }: {
-  progressionId: number;
+  progressionNumber: number;
   bets: Bet[];
+  title?: string;
 }) => {
   const { openModal } = useModal();
 
   return (
-    <Section
-      title="Current progression bets"
-      meta={`#${progressionId} · attempt 1 first`}
-    >
+    <Section title={title} meta={`#${progressionNumber} · attempt 1 first`}>
       <Table
         columns={columns}
         rows={bets}

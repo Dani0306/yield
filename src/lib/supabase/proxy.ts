@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database.types";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_ROUTES = ["/dashboard", "/bets", "/stats", "/profile", "/settings", "/draw-odds"];
+const PROTECTED_ROUTES = ["/dashboard", "/bets", "/stats", "/profile", "/settings", "/draw-odds", "/progression"];
 
 // Refreshes the auth session cookie and redirects signed-out users
 // away from protected routes. Called from src/proxy.ts.

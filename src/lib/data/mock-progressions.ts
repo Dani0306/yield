@@ -1,4 +1,9 @@
-import type { Bet, Progression, ProgressionStatus, ProgressionWithStats } from "@/types";
+import type {
+  Bet,
+  Progression,
+  ProgressionStatus,
+  ProgressionWithStats,
+} from "@/types";
 import { MOCK_USER_ID, mockBets } from "./mock-bets";
 
 // Mock progressions built from mockBets. A progression ends when a bet is won,
@@ -11,8 +16,10 @@ const betsOf = (progressionId: number) =>
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
-const sum = (bets: Bet[], field: "amount" | "stake" | "profit" | "profit_units") =>
-  round(bets.reduce((total, bet) => total + bet[field], 0));
+const sum = (
+  bets: Bet[],
+  field: "amount" | "stake" | "profit" | "profit_units",
+) => round(bets.reduce((total, bet) => total + bet[field], 0));
 
 const mockProgression = (id: number): Progression => {
   const bets = betsOf(id);
@@ -22,6 +29,7 @@ const mockProgression = (id: number): Progression => {
 
   return {
     id,
+    number: id,
     user_id: MOCK_USER_ID,
     status,
     start_date: first.match_date,
@@ -36,11 +44,12 @@ export const mockProgressions: Progression[] = [
 ];
 
 // Same shape as the progression_stats view: each progression with its totals.
-export const mockProgressionStats: ProgressionWithStats[] = mockProgressions.map(
-  (progression) => {
+export const mockProgressionStats: ProgressionWithStats[] =
+  mockProgressions.map((progression) => {
     const bets = betsOf(progression.id);
     return {
       progression_id: progression.id,
+      progression_number: progression.number,
       user_id: progression.user_id,
       status: progression.status,
       start_date: progression.start_date,
@@ -51,5 +60,4 @@ export const mockProgressionStats: ProgressionWithStats[] = mockProgressions.map
       profit: sum(bets, "profit"),
       profit_units: sum(bets, "profit_units"),
     };
-  },
-);
+  });

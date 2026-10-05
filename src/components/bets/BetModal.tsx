@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Modal from "../ui/Modal";
+import { Detail, SectionTitle } from "../ui/Details";
 import DeleteBetModal from "./DeleteBetModal";
 import SettleBetModal from "./SettleBetModal";
 import {
@@ -30,29 +31,6 @@ type BetModalProps = {
 
 // Delete and settle ask first, in a smaller modal on top of this one.
 type Step = "details" | "delete" | "settle";
-
-const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="border-b border-gray-400 pb-3 text-sm font-medium text-black">
-    {children}
-  </h3>
-);
-
-const Detail = ({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
-}) => (
-  <div className="flex items-baseline gap-4 border-b border-gray-200 py-3">
-    <dt className="w-36 shrink-0 text-xs text-gray-500">{label}</dt>
-    <dd className={`min-w-0 text-sm text-black ${mono ? "font-mono" : ""}`}>
-      {value}
-    </dd>
-  </div>
-);
 
 const ResultCell = ({
   label,
@@ -203,7 +181,7 @@ const BetModal = ({ bet, onClose, onEdit }: BetModalProps) => {
         size="xl"
         className="p-4"
         onClose={onClose}
-        eyebrow={`Progression #${bet.progression_id} · Attempt ${bet.attempt_number} · #${String(bet.id).padStart(4, "0")}`}
+        eyebrow={`Progression #${bet.progression_number} · Attempt ${bet.attempt_number} · #${String(bet.id).padStart(4, "0")}`}
         title={matchName(bet)}
         titleSize="lg"
         description={
@@ -227,6 +205,7 @@ const BetModal = ({ bet, onClose, onEdit }: BetModalProps) => {
                 />
                 <Detail label="Match" value={matchName(bet)} />
                 <Detail label="Selection" value="Draw" />
+                <Detail label="Bookmaker" value={bet.bookmaker} />
                 <Detail label="Placed" value={formatDateTime(bet.created_at)} />
               </div>
               <div>
@@ -235,7 +214,7 @@ const BetModal = ({ bet, onClose, onEdit }: BetModalProps) => {
                 <Detail label="Units" value={formatUnits(bet.stake)} mono />
                 <Detail
                   label="Progression"
-                  value={`#${bet.progression_id} · attempt ${bet.attempt_number}`}
+                  value={`#${bet.progression_number} · attempt ${bet.attempt_number}`}
                   mono
                 />
               </div>
@@ -247,7 +226,18 @@ const BetModal = ({ bet, onClose, onEdit }: BetModalProps) => {
             <div className="grid divide-gray-200 border-b border-gray-200 max-sm:divide-y sm:grid-cols-3 sm:divide-x">
               <ResultCell
                 label="Final result"
-                value={bet.result ? resultLabels[bet.result] : "–"}
+                value={
+                  bet.result ? (
+                    <>
+                      {resultLabels[bet.result]}
+                      {bet.score && (
+                        <span className="ml-3 text-gray-500">{bet.score}</span>
+                      )}
+                    </>
+                  ) : (
+                    "–"
+                  )
+                }
                 valueClassName={bet.result ? "text-black" : "text-gray-500"}
               />
               <ResultCell

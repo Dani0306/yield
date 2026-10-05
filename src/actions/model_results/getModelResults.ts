@@ -25,8 +25,12 @@ export const getModelResults = async (
     .order("draw_percentage", { ascending: false });
 
   // A result is in one list only: "selected" shows the added ones, the
-  // default list the rest.
-  query = query.eq("added", filter === "selected");
+  // default list the rest. "is not true" also matches NULL, so a row
+  // imported without the column still shows up as unselected.
+  query =
+    filter === "selected"
+      ? query.eq("added", true)
+      : query.not("added", "is", true);
 
   const { data, error } = await query;
 

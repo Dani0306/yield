@@ -3,26 +3,21 @@
 import { useFilters } from "@/hooks/shared/useFilters";
 import PageContainer from "../layout/PageContainer";
 import Table, { type TableColumn } from "../layout/table/Table";
-import PageButton from "../ui/PageButton";
-import {
-  formatGameDate,
-  formatPercent,
-  hasKickedOff,
-  kickOff,
-} from "@/lib/utils/fn";
-import type { ModelResult } from "@/types";
-import { useSelectResult } from "@/hooks/results/useSelectResult";
+import ResultActions from "./ResultActions";
+import { formatGameDate, formatPercent, hasKickedOff } from "@/lib/utils/fn";
+import type { ModelResult, ResultBet } from "@/types";
 import { useModal } from "../providers/ModalProvider";
 import { useState } from "react";
+import { findClash, kickOffTime } from "@/lib/utils/results";
 
-// match_date is a plain date ("2026-10-03"). Read as midnight UTC it shows
-// the day before in Colombia, so format it from midday instead.
-
-// A match appears once per scrape (the table's unique key).
 const rowKey = (r: ModelResult) =>
   `${r.match_date}-${r.home_team}-${r.away_team}-${r.scraped_at}`;
 
-const columns: TableColumn<ModelResult>[] = [
+// A result, the selected match that blocks it and the bet placed from it
+// (null when there's none).
+type Row = ModelResult & { clash: ModelResult | null; bet: ResultBet | null };
+
+const columns: TableColumn<Row>[] = [
   { key: "home_team", header: "Home", width: "18%" },
   { key: "away_team", header: "Away", width: "18%" },
   {
@@ -38,7 +33,7 @@ const columns: TableColumn<ModelResult>[] = [
     width: "9%",
     align: "right",
     cellClassName: "font-mono",
-    render: (r) => r.rank_gap ?? "–",
+    render: (r) => r.rank_gap ?? "-",
   },
   {
     key: "league_draw_rate",
@@ -65,62 +60,11 @@ const columns: TableColumn<ModelResult>[] = [
     header: "",
     width: "18%",
     align: "right",
-    render: (r) => <ResultActions result={r} />,
+    render: (r) => <ResultActions result={r} clash={r.clash} bet={r.bet} />,
   },
 ];
 
-// Unselected results can only be selected. Selected ones can be bet on, or
-// deselected to send them back to the rest.
-const ResultActions = ({ result }: { result: ModelResult }) => {
-  const { setSelected, isPending } = useSelectResult();
-  const { openModal } = useModal();
-  const match = `${result.home_team} v ${result.away_team}`;
-
-  if (isPending)
-    return (
-      <span className="text-xs text-gray-500">
-        {result.added ? "Removing…" : "Selecting…"}
-      </span>
-    );
-
-  if (!result.added)
-    return (
-      <PageButton
-        text="Select"
-        aria-label={`Select ${match}`}
-        onClick={() => setSelected(result, true)}
-        className="rounded-md px-3! py-1.5! text-xs"
-      />
-    );
-
-  return (
-    <div className="inline-flex items-center gap-3 max-md:flex-col-reverse max-md:items-end max-md:gap-1.5">
-      <button
-        type="button"
-        aria-label={`Deselect ${match}`}
-        onClick={() => setSelected(result, false)}
-        className="cursor-pointer text-xs text-gray-500 transition-colors hover:text-black"
-      >
-        Deselect
-      </button>
-      <PageButton
-        text="Bet"
-        aria-label={`Bet on ${match}`}
-        onClick={() =>
-          openModal("createBet", {
-            homeTeam: result.home_team,
-            awayTeam: result.away_team,
-            matchDate: kickOff(result),
-            drawPercentage: result.draw_percentage,
-          })
-        }
-        className="rounded-md px-3! py-1.5! text-xs"
-      />
-    </div>
-  );
-};
-
-const MobileRow = (r: ModelResult) => (
+const MobileRow = (r: Row) => (
   <div className="flex items-center gap-4">
     <div className="flex min-w-0 flex-1 flex-col gap-1">
       <span className="truncate text-black">
@@ -141,7 +85,7 @@ const MobileRow = (r: ModelResult) => (
           : formatPercent(r.league_draw_rate * 100, 1)}
       </span>
     </div>
-    <ResultActions result={r} />
+    <ResultActions result={r} clash={r.clash} bet={r.bet} />
   </div>
 );
 
@@ -150,17 +94,27 @@ const tabs = [
   { label: "Selected", value: "selected" },
 ];
 
-const DrawOddsContent = ({ results }: { results: ModelResult[] }) => {
+type DrawOddsContentProps = {
+  results: ModelResult[];
+  selected: ModelResult[];
+  // Bets placed from the listed results, keyed by result id.
+  bets: Record<number, ResultBet>;
+};
+
+const DrawOddsContent = ({ results, selected, bets }: DrawOddsContentProps) => {
   const { setFilter, hasFilter } = useFilters();
+  const { openModal } = useModal();
   const showingSelected = hasFilter({ type: "filter", value: "selected" });
-  // Read once per render of the list; matches that already kicked off
-  // are grayed out.
   const [now] = useState(() => Date.now());
-  // Unselected matches that already kicked off can't be bet on: hide them.
-  // Selected ones stay (grayed out) until you deselect them.
-  const rows = showingSelected
-    ? results
-    : results.filter((r) => !hasKickedOff(r, now));
+  const rows: Row[] = (
+    showingSelected
+      ? [...results].sort((a, b) => kickOffTime(a) - kickOffTime(b))
+      : results.filter((r) => !hasKickedOff(r, now))
+  ).map((r) => ({
+    ...r,
+    clash: findClash(r, selected),
+    bet: bets[r.id] ?? null,
+  }));
 
   return (
     <PageContainer
@@ -192,7 +146,12 @@ const DrawOddsContent = ({ results }: { results: ModelResult[] }) => {
         columns={columns}
         rows={rows}
         getRowKey={rowKey}
-        getRowClassName={(r) => (hasKickedOff(r, now) ? "opacity-40" : "")}
+        onRowClick={({ clash, bet, ...result }) =>
+          openModal("result", { result, clash, bet })
+        }
+        getRowClassName={(r) =>
+          hasKickedOff(r, now) || r.clash ? "opacity-40" : ""
+        }
         renderMobileRow={MobileRow}
         emptyMessage={
           showingSelected ? "No selected results yet" : "No results to select"

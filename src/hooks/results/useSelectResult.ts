@@ -6,7 +6,12 @@ import type { ModelResult } from "@/types";
 export const useSelectResult = () => {
   const [isPending, startTransition] = useTransition();
 
-  const setSelected = (result: ModelResult, added: boolean) => {
+  // onDone runs once the change is saved, e.g. to close a modal.
+  const setSelected = (
+    result: ModelResult,
+    added: boolean,
+    onDone?: () => void,
+  ) => {
     startTransition(async () => {
       // Awaited, so isPending stays true until the list has refreshed.
       await setResultAdded(
@@ -18,6 +23,7 @@ export const useSelectResult = () => {
         },
         added,
       );
+      onDone?.();
     });
   };
 

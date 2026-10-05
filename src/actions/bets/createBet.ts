@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { stakeAfterLosses } from "@/lib/utils/staking";
+import { BOOKMAKERS } from "@/lib/data/bookmakers";
 import type { CreateBetInput } from "@/types";
 
 const isNumber = (n: unknown): n is number =>
@@ -28,6 +29,8 @@ const validate = (input: CreateBetInput): string | null => {
     Number.isNaN(Date.parse(input.match_date))
   )
     return "Enter a valid match date";
+  if (!(BOOKMAKERS as readonly string[]).includes(input.bookmaker))
+    return "Choose a bookmaker";
   if (!isNumber(input.odds) || input.odds <= 1)
     return "Odds must be greater than 1";
   if (
@@ -36,6 +39,11 @@ const validate = (input: CreateBetInput): string | null => {
     input.draw_percentage > 100
   )
     return "Draw estimate must be between 0 and 100";
+  if (
+    input.model_result_id !== undefined &&
+    (!Number.isInteger(input.model_result_id) || input.model_result_id <= 0)
+  )
+    return "Invalid result";
   return null;
 };
 
@@ -128,11 +136,16 @@ export const createBet = async (
       stake: units,
       amount,
       draw_percentage: input.draw_percentage,
+      bookmaker: input.bookmaker,
+      model_result_id: input.model_result_id ?? null,
     })
     .select("id")
     .single();
 
   if (error) {
+    // unique (model_result_id): this result already has a bet.
+    if (error.code === "23505" && error.message.includes("model_result_id"))
+      return { betId: null, error: "You've already bet on this result" };
     // unique (progression_id, attempt_number): another save got there first.
     if (error.code === "23505")
       return {
@@ -144,5 +157,6 @@ export const createBet = async (
 
   revalidatePath("/dashboard");
   revalidatePath("/bets");
+  revalidatePath("/draw-odds");
   return { betId: bet.id, error: null };
 };

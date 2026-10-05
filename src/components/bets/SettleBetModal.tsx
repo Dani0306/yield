@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Modal from "../ui/Modal";
 import { settleBet } from "@/actions/bets/settleBet";
 import { formatMoney, withSign } from "@/lib/utils/fn";
-import { matchName } from "@/lib/utils/bets";
+import { matchName, outcomeFromScore, parseScore } from "@/lib/utils/bets";
 import type { Bet, SettleOutcome } from "@/types";
 
 type SettleBetModalProps = {
@@ -48,14 +48,23 @@ const profitClass = (profit: number) =>
 
 const SettleBetModal = ({ bet, onCancel, onSettled }: SettleBetModalProps) => {
   const [outcome, setOutcome] = useState<SettleOutcome | null>(null);
+  const [score, setScore] = useState("");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // A valid score picks the matching outcome, so typing "1-1" is enough.
+  // A void bet keeps "Void" selected whatever the score.
+  const handleScore = (value: string) => {
+    setScore(value);
+    const parsed = parseScore(value);
+    if (parsed && outcome !== "void") setOutcome(outcomeFromScore(parsed));
+  };
 
   const handleSettle = () => {
     if (!outcome) return;
     startTransition(async () => {
       setError(null);
-      const { error } = await settleBet(bet.id, outcome);
+      const { error } = await settleBet(bet.id, outcome, score);
       if (error) return setError(error);
       onSettled();
     });
@@ -69,6 +78,25 @@ const SettleBetModal = ({ bet, onCancel, onSettled }: SettleBetModalProps) => {
       onClose={() => !isPending && onCancel()}
     >
       <div className="flex flex-col gap-5">
+        <div className="flex flex-col space-y-1.5">
+          <label htmlFor="score" className="text-xs font-normal text-gray-800">
+            Final score{" "}
+            <span className="text-gray-500">
+              ({bet.home_team} – {bet.away_team})
+            </span>
+          </label>
+          <input
+            id="score"
+            name="score"
+            value={score}
+            onChange={(e) => handleScore(e.target.value)}
+            placeholder={outcome === "void" ? "Optional" : "1-1"}
+            autoComplete="off"
+            disabled={isPending}
+            className="w-full border border-gray-300 px-3 py-2.5 font-mono text-sm text-gray-800 outline-none transition-shadow placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black"
+          />
+        </div>
+
         <fieldset className="flex flex-col" disabled={isPending}>
           <legend className="sr-only">Match result</legend>
           {options(bet).map((option) => (

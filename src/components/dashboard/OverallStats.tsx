@@ -1,25 +1,37 @@
-import { formatMoney, formatPercent, formatUnits, withSign } from "@/lib/utils/fn";
+import {
+  formatMoney,
+  formatPercent,
+  formatUnits,
+  withSign,
+} from "@/lib/utils/fn";
 import type { DashboardData } from "@/types";
 import { Section, Stat, StatGrid, signClass } from "./DashboardUI";
 
-const signedPercent = (value: number) => withSign(value, (n) => formatPercent(n, 1));
+const signedPercent = (value: number) =>
+  withSign(value, (n) => formatPercent(n, 1));
 
-const OverallStats = ({ overview }: { overview: DashboardData["overview"] }) => {
-  const draws = Math.round((overview.drawHitRatePercent / 100) * overview.settledBets);
+const OverallStats = ({
+  overview,
+}: {
+  overview: DashboardData["overview"];
+}) => {
+  const draws = Math.round(
+    (overview.drawHitRatePercent / 100) * overview.settledBets,
+  );
 
   return (
     <Section title="Overall">
       <StatGrid columns={6}>
         <Stat
+          label="Current bank"
+          value={formatMoney(overview.currentBank)}
+          sub={`Budget ${formatMoney(overview.startingBank)}`}
+        />
+        <Stat
           label="Net profit"
           value={withSign(overview.netProfit, formatMoney)}
           valueClassName={signClass(overview.netProfit)}
           sub={withSign(overview.netProfitUnits, formatUnits)}
-        />
-        <Stat
-          label="Current bank"
-          value={formatMoney(overview.currentBank)}
-          sub={`Budget ${formatMoney(overview.startingBank)}`}
         />
         <Stat
           label="Bank growth"

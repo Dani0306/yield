@@ -1,8 +1,8 @@
 import {
   ChartColumn,
   LayoutDashboard,
-  Plus,
   ReceiptText,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -27,22 +27,15 @@ export const links: NavLink[] = [
     keywords: ["bets", "history", "log", "list"],
   },
   {
-    label: "New bet",
-    href: "/bets/new",
-    icon: Plus,
-    keywords: ["new", "add", "create", "place", "bet"],
-  },
-  {
     label: "Draw odds",
     href: "/draw-odds",
     icon: ChartColumn,
     keywords: ["draw", "odds", "model", "predictions"],
   },
-
-  // {
-  //   label: "Stats",
-  //   href: "/stats",
-  //   icon: ChartColumn,
-  //   keywords: ["stats", "statistics", "analytics", "roi", "profit", "charts"],
-  // },
+  {
+    label: "Settings",
+    href: "/bets/new",
+    icon: Settings,
+    keywords: ["settings"],
+  },
 ];

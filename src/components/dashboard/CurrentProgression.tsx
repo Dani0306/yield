@@ -1,6 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import {
-  formatDate,
+  formatDateTime,
   formatMoney,
   formatPercent,
   formatShortDate,
@@ -15,7 +17,7 @@ import PageButton from "../ui/PageButton";
 
 type CurrentProgressionData = NonNullable<DashboardData["currentProgression"]>;
 
-const Field = ({
+const BetFigure = ({
   label,
   value,
   sub,
@@ -26,29 +28,14 @@ const Field = ({
 }) => (
   <div className="flex min-w-0 flex-col gap-1.5">
     <span className="text-xs text-gray-500">{label}</span>
-    <span className="truncate font-mono text-sm text-black">{value}</span>
+    <span className="truncate font-mono text-xl tracking-tight text-black sm:text-2xl">
+      {value}
+    </span>
     {sub && <span className="truncate text-xs text-gray-500">{sub}</span>}
   </div>
 );
 
-const Row = ({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: React.ReactNode;
-  sub?: React.ReactNode;
-}) => (
-  <div className="flex flex-col gap-1 border-b border-gray-200 py-3 last:border-b-0">
-    <div className="flex items-baseline justify-between gap-4">
-      <span className="text-sm text-gray-500">{label}</span>
-      <span className="font-mono text-sm text-black">{value}</span>
-    </div>
-    {sub && <span className="self-end text-xs text-gray-500">{sub}</span>}
-  </div>
-);
-
+// The open bet, highlighted: it's what's at stake right now.
 const CurrentBet = ({
   progression,
 }: {
@@ -64,60 +51,49 @@ const CurrentBet = ({
   // What the whole progression nets if this bet wins.
   const progressionResult = potentialReturn - investedAmount;
 
-  const stake = formatMoney(bet.amount);
-  const units = formatUnits(bet.stake);
-  const advantage = withSign(bet.advantage, (n) => formatPercent(n, 1));
-  const ifWinsSub = `Progression ${withSign(progressionResult, formatMoney)}`;
-
   return (
-    <div className="flex flex-col gap-4 border-t border-gray-200 pt-6">
-      <div className="flex items-baseline justify-between gap-4">
-        <span className="text-xs text-gray-500">Current bet · Pending</span>
-        <span
+    <section aria-label="Current bet" className="flex flex-col gap-6">
+      <div className="flex items-center justify-between gap-4">
+        <span className="flex items-center gap-2 text-xs text-gray-500">
+          <span className="size-1.5 shrink-0 rounded-full bg-black" />
+          Current bet · Pending · Attempt {bet.attempt_number}
+        </span>
+        <button
+          type="button"
           onClick={() => openModal("bet", { bet })}
-          className="text-xs text-black underline-offset-4 hover:underline"
+          className="shrink-0 cursor-pointer rounded-md border border-black px-3 py-1.5 text-xs text-black transition-colors hover:bg-gray-100"
         >
-          View Bet
+          View bet
+        </button>
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="text-2xl font-medium tracking-tight text-black sm:text-3xl">
+          {matchName(bet)}
+        </span>
+        <span className="text-xs text-gray-500">
+          {formatDateTime(bet.match_date)} · {bet.bookmaker}
         </span>
       </div>
 
-      {/* Desktop */}
-      <div className="hidden grid-cols-[2fr_1fr_1.2fr_1fr_1.4fr] gap-6 lg:grid">
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <span className="text-xs text-gray-500">Match</span>
-          <span className="truncate text-base text-black">
-            {matchName(bet)}
-          </span>
-          <span className="text-xs text-gray-500">
-            {formatDate(bet.match_date)}
-          </span>
-        </div>
-        <Field label="Odds" value={bet.odds.toFixed(2)} />
-        <Field label="Stake" value={stake} sub={units} />
-        <Field label="Advantage" value={advantage} />
-        <Field
+      <div className="grid grid-cols-2 gap-6 border-t border-gray-200 pt-5 lg:grid-cols-4">
+        <BetFigure label="Odds" value={bet.odds.toFixed(2)} />
+        <BetFigure
+          label="Stake"
+          value={formatMoney(bet.amount)}
+          sub={formatUnits(bet.stake)}
+        />
+        <BetFigure
+          label="Advantage"
+          value={withSign(bet.advantage, (n) => formatPercent(n, 1))}
+        />
+        <BetFigure
           label="If it wins"
           value={formatMoney(potentialReturn)}
-          sub={ifWinsSub}
+          sub={`Progression ${withSign(progressionResult, formatMoney)}`}
         />
       </div>
-
-      {/* Mobile */}
-      <div className="flex flex-col lg:hidden">
-        <span className="text-base text-black">{matchName(bet)}</span>
-        <span className="mb-2 text-xs text-gray-500">
-          {formatDate(bet.match_date)}
-        </span>
-        <Row label="Odds" value={bet.odds.toFixed(2)} />
-        <Row label="Stake" value={`${stake} · ${units}`} />
-        <Row label="Advantage" value={advantage} />
-        <Row
-          label="If it wins"
-          value={formatMoney(potentialReturn)}
-          sub={ifWinsSub}
-        />
-      </div>
-    </div>
+    </section>
   );
 };
 
@@ -146,9 +122,42 @@ const CurrentProgression = ({
   return (
     <Section
       title="Current progression"
-      meta={`Active · #${progression.id}${startDate ? ` · since ${formatShortDate(startDate)}` : ""}`}
+      meta={
+        <span className="flex items-center gap-4">
+          <span className="max-sm:hidden">
+            Active · #{progression.number}
+            {startDate && ` · since ${formatShortDate(startDate)}`}
+          </span>
+          <Link
+            href={`/progression/${progression.number}`}
+            className="shrink-0 rounded-md border border-black px-3 py-1.5 text-xs text-black transition-colors hover:bg-gray-100"
+          >
+            Progression details
+          </Link>
+        </span>
+      }
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-12">
+        {progression.currentBet ? (
+          <CurrentBet progression={progression} />
+        ) : (
+          <div className="flex items-center justify-between gap-4 border-t border-gray-200 pt-6">
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-gray-500">Next stake</span>
+              <span className="font-mono text-base text-black">
+                {formatMoney(progression.nextStake.amount)} ·{" "}
+                {formatUnits(progression.nextStake.units)}
+              </span>
+            </div>
+            <Link
+              href="/bets/new"
+              className="bg-black px-4 py-3 text-sm font-light text-white transition-colors hover:bg-neutral-800"
+            >
+              Add bet
+            </Link>
+          </div>
+        )}
+
         <StatGrid columns={4}>
           <Stat
             size="lg"
@@ -175,26 +184,6 @@ const CurrentProgression = ({
             sub="more losing attempts"
           />
         </StatGrid>
-
-        {progression.currentBet ? (
-          <CurrentBet progression={progression} />
-        ) : (
-          <div className="flex items-center justify-between gap-4 border-t border-gray-200 pt-6">
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs text-gray-500">Next stake</span>
-              <span className="font-mono text-base text-black">
-                {formatMoney(progression.nextStake.amount)} ·{" "}
-                {formatUnits(progression.nextStake.units)}
-              </span>
-            </div>
-            <Link
-              href="/bets/new"
-              className="bg-black px-4 py-3 text-sm font-light text-white transition-colors hover:bg-neutral-800"
-            >
-              Add bet
-            </Link>
-          </div>
-        )}
       </div>
     </Section>
   );

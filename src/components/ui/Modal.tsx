@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
-import { useScrollLock } from "usehooks-ts";
+import { useBodyScrollLock } from "@/hooks/shared/useBodyScrollLock";
 
 const sizes = {
   sm: "sm:max-w-sm",
@@ -45,7 +45,7 @@ const Modal = ({
   const titleId = useId();
   const descriptionId = useId();
 
-  useScrollLock();
+  useBodyScrollLock();
 
   useEffect(() => {
     const dialog = dialogRef.current;

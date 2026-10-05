@@ -23,7 +23,7 @@ const statusClass: Record<BetStatus, string> = {
 
 const profitClass = (bet: Bet) => {
   if (bet.status === "pending" || bet.status === "void" || bet.profit === 0)
-    return "text-gray-500";
+    return "text-yellow-500";
   return bet.profit > 0 ? "text-green-700" : "text-red-700";
 };
 
@@ -31,7 +31,7 @@ const tableColumns: TableColumn<Bet>[] = [
   {
     key: "match_date",
     header: "Date",
-    width: "10%",
+    width: "7%",
     cellClassName: "text-gray-500",
     render: (bet) => formatShortDate(bet.match_date),
   },
@@ -76,7 +76,8 @@ const tableColumns: TableColumn<Bet>[] = [
   {
     key: "status",
     header: "Status",
-    width: "10%",
+    width: "13%",
+    align: "right",
     render: (bet) => (
       <span className={statusClass[bet.status]}>
         {statusLabels[bet.status]}

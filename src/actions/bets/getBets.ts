@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { BET_SELECT, toBet } from "@/lib/utils/bets";
 import type { Bet } from "@/types";
 
 // All of the signed-in user's bets, newest match first. RLS limits the rows
@@ -12,12 +13,12 @@ export const getBets = async (): Promise<Bet[]> => {
 
   const { data, error } = await supabase
     .from("bets")
-    .select("*")
+    .select(BET_SELECT)
     .order("match_date", { ascending: false })
     .order("attempt_number", { ascending: false });
 
   if (error) throw new Error("Error getting bets");
 
   // The check constraints guarantee status and result hold these values.
-  return data as Bet[];
+  return (data as unknown as Parameters<typeof toBet>[0][]).map(toBet);
 };

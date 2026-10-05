@@ -34,9 +34,13 @@ const EdgeCheck = ({
   edge: DashboardData["edge"];
   settledBets: number;
 }) => {
-  const { estimatedDrawRatePercent: estimated, actualDrawRatePercent: actual } = edge;
+  const { estimatedDrawRatePercent: estimated, actualDrawRatePercent: actual } =
+    edge;
   // Bars share a scale with headroom, so the difference is easy to see.
-  const scaleMax = Math.max(50, Math.ceil(Math.max(estimated, actual) / 10) * 10);
+  const scaleMax = Math.max(
+    50,
+    Math.ceil(Math.max(estimated, actual) / 10) * 10,
+  );
   const gap = edge.drawRateGapPercent;
   const gapMeaning =
     gap < 0
@@ -49,9 +53,21 @@ const EdgeCheck = ({
     <Section title="Edge check">
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-3">
-          <span className="text-xs text-gray-500">Estimated vs actual draw rate</span>
-          <Bar label="Estimated" value={estimated} scaleMax={scaleMax} fillClassName="bg-gray-400" />
-          <Bar label="Actual" value={actual} scaleMax={scaleMax} fillClassName="bg-black" />
+          <span className="text-xs text-gray-500">
+            Estimated vs actual draw rate
+          </span>
+          <Bar
+            label="Estimated"
+            value={estimated}
+            scaleMax={scaleMax}
+            fillClassName="bg-gray-400"
+          />
+          <Bar
+            label="Actual"
+            value={actual}
+            scaleMax={scaleMax}
+            fillClassName="bg-black"
+          />
           <p className="text-xs text-gray-500">
             Gap{" "}
             <span className="font-mono text-black">
@@ -67,7 +83,9 @@ const EdgeCheck = ({
             <span className="font-mono text-2xl tracking-tight text-black max-lg:text-sm">
               {withSign(edge.averageAdvantagePercent, (n) => formatPercent(n))}
             </span>
-            <span className="text-xs text-gray-500">across {settledBets} settled bets</span>
+            <span className="text-xs text-gray-500">
+              across {settledBets} settled bets
+            </span>
           </div>
         </div>
       </div>

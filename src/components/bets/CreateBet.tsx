@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import Modal from "../ui/Modal";
 import Input from "../ui/Input";
+import Select from "../ui/Select";
+import { BOOKMAKERS } from "@/lib/data/bookmakers";
 import PageButton from "../ui/PageButton";
 import { createBet } from "@/actions/bets/createBet";
 import { formatPercent, withSign } from "@/lib/utils/fn";
@@ -15,6 +17,8 @@ type CreateBetProps = {
   // Local date and time as "YYYY-MM-DDTHH:MM" (what a datetime input takes).
   matchDate?: string;
   drawPercentage?: number;
+  // The Draw odds result this bet comes from, so the result shows its bet.
+  modelResultId?: number;
 };
 
 // Muted green/red for the advantage; neutral when zero.
@@ -30,10 +34,12 @@ const CreateBet = ({
   awayTeam = "",
   matchDate = "",
   drawPercentage,
+  modelResultId,
 }: CreateBetProps) => {
   const [home, setHome] = useState(homeTeam);
   const [away, setAway] = useState(awayTeam);
   const [date, setDate] = useState(matchDate);
+  const [bookmaker, setBookmaker] = useState("");
   const [odds, setOdds] = useState("");
   const [estimate, setEstimate] = useState(
     // Bets store 2 decimals (36.8389 → 36.84).
@@ -54,6 +60,7 @@ const CreateBet = ({
   const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!date) return setError("Enter the match date and time");
+    if (!bookmaker) return setError("Choose a bookmaker");
 
     startTransition(async () => {
       setError(null);
@@ -65,6 +72,8 @@ const CreateBet = ({
         away_team: away,
         odds: oddsValue,
         draw_percentage: estimateValue,
+        bookmaker,
+        model_result_id: modelResultId,
       });
       if (error) return setError(error);
       onClose();
@@ -102,6 +111,13 @@ const CreateBet = ({
             setValue={setAway}
           />
         </div>
+        <Select
+          label="Bookmaker"
+          name="bookmaker"
+          value={bookmaker}
+          setValue={setBookmaker}
+          options={BOOKMAKERS}
+        />
         <div className="grid gap-5 sm:grid-cols-2">
           <Input
             label="Odds (decimal)"

@@ -50,7 +50,10 @@ const buildScale = (points: Point[]) => {
   cursor.setUTCHours(12, 0, 0, 0);
   cursor.setUTCMonth(cursor.getUTCMonth() + 1);
   while (cursor.getTime() <= t1) {
-    months.push({ label: formatMonth(cursor.toISOString()), x: x(cursor.getTime()) });
+    months.push({
+      label: formatMonth(cursor.toISOString()),
+      x: x(cursor.getTime()),
+    });
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
   }
 
@@ -72,10 +75,15 @@ const ProfitChart = ({ points }: { points: Point[] }) => {
   }
 
   const { ticks, y, months, positions } = buildScale(points);
-  const path = positions.map((p, i) => `${i ? "L" : "M"}${p.x},${p.y}`).join(" ");
+  const path = positions
+    .map((p, i) => `${i ? "L" : "M"}${p.x},${p.y}`)
+    .join(" ");
   const last = positions[positions.length - 1];
   const lastPoint = points[points.length - 1];
-  const active = hovered !== null ? { point: points[hovered], pos: positions[hovered] } : null;
+  const active =
+    hovered !== null
+      ? { point: points[hovered], pos: positions[hovered] }
+      : null;
 
   // Snap the crosshair to the nearest point on the x-axis.
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -101,7 +109,9 @@ const ProfitChart = ({ points }: { points: Point[] }) => {
       <div className="flex flex-col gap-4">
         <div className="flex items-baseline justify-between gap-4">
           <span className="text-sm text-black">Profit over time</span>
-          <span className="text-xs text-gray-500">Cumulative · settled bets</span>
+          <span className="text-xs text-gray-500">
+            Cumulative · settled bets
+          </span>
         </div>
 
         <div className="flex gap-3">
@@ -144,7 +154,9 @@ const ProfitChart = ({ points }: { points: Point[] }) => {
                     y1={y(tick)}
                     y2={y(tick)}
                     vectorEffect="non-scaling-stroke"
-                    className={tick === 0 ? "stroke-gray-300" : "stroke-gray-100"}
+                    className={
+                      tick === 0 ? "stroke-gray-300" : "stroke-gray-100"
+                    }
                     strokeWidth={1}
                   />
                 ))}
@@ -165,7 +177,10 @@ const ProfitChart = ({ points }: { points: Point[] }) => {
                   <span
                     key={point.date}
                     className="pointer-events-none absolute -translate-x-1/2 translate-y-2 font-mono text-[10px] whitespace-nowrap text-gray-500"
-                    style={{ left: `${positions[i].x}%`, top: `${positions[i].y}%` }}
+                    style={{
+                      left: `${positions[i].x}%`,
+                      top: `${positions[i].y}%`,
+                    }}
                   >
                     {point.note}
                   </span>
@@ -189,7 +204,10 @@ const ProfitChart = ({ points }: { points: Point[] }) => {
                   <span
                     aria-hidden
                     className="pointer-events-none absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black ring-2 ring-white"
-                    style={{ left: `${active.pos.x}%`, top: `${active.pos.y}%` }}
+                    style={{
+                      left: `${active.pos.x}%`,
+                      top: `${active.pos.y}%`,
+                    }}
                   />
                   <div
                     role="status"
@@ -201,9 +219,13 @@ const ProfitChart = ({ points }: { points: Point[] }) => {
                     <span className="font-mono text-sm text-black">
                       {withSign(active.point.cumulativeProfit, formatMoney)}
                     </span>
-                    <span className="text-xs text-gray-500">{formatDate(active.point.date)}</span>
+                    <span className="text-xs text-gray-500">
+                      {formatDate(active.point.date)}
+                    </span>
                     {active.point.note && (
-                      <span className="text-xs text-gray-500">{active.point.note}</span>
+                      <span className="text-xs text-gray-500">
+                        {active.point.note}
+                      </span>
                     )}
                   </div>
                 </>

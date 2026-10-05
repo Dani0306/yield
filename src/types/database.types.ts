@@ -20,16 +20,19 @@ export type Database = {
           amount: number;
           attempt_number: number;
           away_team: string;
+          bookmaker: string;
           created_at: string;
           draw_percentage: number;
           home_team: string;
           id: number;
           match_date: string;
+          model_result_id: number | null;
           odds: number;
           profit: number | null;
           profit_units: number | null;
           progression_id: number;
           result: string | null;
+          score: string | null;
           stake: number;
           status: string;
           user_id: string;
@@ -39,16 +42,19 @@ export type Database = {
           amount: number;
           attempt_number: number;
           away_team: string;
+          bookmaker: string;
           created_at?: string;
           draw_percentage: number;
           home_team: string;
           id?: never;
           match_date?: string;
+          model_result_id?: number | null;
           odds: number;
           profit?: number | null;
           profit_units?: number | null;
           progression_id: number;
           result?: string | null;
+          score?: string | null;
           stake: number;
           status?: string;
           user_id?: string;
@@ -58,21 +64,31 @@ export type Database = {
           amount?: number;
           attempt_number?: number;
           away_team?: string;
+          bookmaker?: string;
           created_at?: string;
           draw_percentage?: number;
           home_team?: string;
           id?: never;
           match_date?: string;
+          model_result_id?: number | null;
           odds?: number;
           profit?: number | null;
           profit_units?: number | null;
           progression_id?: number;
           result?: string | null;
+          score?: string | null;
           stake?: number;
           status?: string;
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "bets_model_result_id_fkey";
+            columns: ["model_result_id"];
+            isOneToOne: true;
+            referencedRelation: "model_results";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "bets_progression_id_user_id_fkey";
             columns: ["progression_id", "user_id"];
@@ -222,6 +238,7 @@ export type Database = {
           created_at: string;
           end_date: string | null;
           id: number;
+          number: number;
           start_date: string;
           status: string;
           user_id: string;
@@ -230,6 +247,7 @@ export type Database = {
           created_at?: string;
           end_date?: string | null;
           id?: never;
+          number?: number;
           start_date?: string;
           status?: string;
           user_id?: string;
@@ -238,6 +256,7 @@ export type Database = {
           created_at?: string;
           end_date?: string | null;
           id?: never;
+          number?: number;
           start_date?: string;
           status?: string;
           user_id?: string;
@@ -251,6 +270,7 @@ export type Database = {
           end_date: string | null;
           profit: number | null;
           profit_units: number | null;
+          progression_number: number | null;
           progression_id: number | null;
           start_date: string | null;
           status: string | null;
