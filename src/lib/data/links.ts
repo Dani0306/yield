@@ -34,7 +34,7 @@ export const links: NavLink[] = [
   },
   {
     label: "Settings",
-    href: "/bets/new",
+    href: "/settings",
     icon: Settings,
     keywords: ["settings"],
   },
