@@ -120,6 +120,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
   const drawScores = scores.filter((s) => s.home === s.away);
   const topScore = mostCommon(scores.map((s) => s.text));
   const topDrawScore = mostCommon(drawScores.map((s) => s.text));
+  const totalGoals = scores.reduce((goals, s) => goals + s.home + s.away, 0);
 
   const patterns: DashboardData["patterns"] = {
     averageOdds: bets.length ? average(bets, (bet) => bet.odds) : null,
@@ -148,6 +149,9 @@ export const getDashboardData = async (): Promise<DashboardData> => {
           count: topDrawScore.count,
           of: drawScores.length,
         }
+      : null,
+    averageGoals: scores.length
+      ? { perGame: round(totalGoals / scores.length), games: scores.length }
       : null,
   };
 

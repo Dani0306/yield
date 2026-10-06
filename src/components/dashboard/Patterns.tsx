@@ -14,35 +14,15 @@ const Patterns = ({ patterns }: { patterns: DashboardData["patterns"] }) => {
     topBookmakers,
     mostCommonScore,
     mostCommonDrawScore,
+    averageGoals,
   } = patterns;
 
   return (
     <Section title="Patterns">
-      <StatGrid columns={6}>
-        <Stat
-          label="Average odds"
-          value={averageOdds === null ? "–" : averageOdds.toFixed(2)}
-          sub={averageOdds === null ? "no bets yet" : "across all bets"}
-        />
-        <Stat
-          label="Average winning attempt"
-          value={
-            averageWinningAttempt === null
-              ? "–"
-              : averageWinningAttempt.toFixed(1)
-          }
-          sub={wonBets ? `across ${plural(wonBets, "win")}` : "no wins yet"}
-        />
-        <Stat
-          label="Highest attempt"
-          value={highestAttempt?.attempt ?? "–"}
-          sub={
-            highestAttempt
-              ? `in progression #${highestAttempt.progressionNumber}`
-              : "no bets yet"
-          }
-        />
-        <div className="flex min-w-0 flex-col gap-2">
+      <StatGrid columns={4}>
+        {/* Seven cells: the list takes two slots (two rows tall on wide screens,
+            full width at the bottom on phones) so the grid has no empty cell. */}
+        <div className="flex min-w-0 flex-col gap-2 max-lg:order-last max-lg:col-span-2 lg:row-span-2">
           <span className="text-xs text-gray-500">Top bookmakers</span>
           {topBookmakers.length === 0 ? (
             <span className="font-mono text-xl text-black">–</span>
@@ -67,6 +47,38 @@ const Patterns = ({ patterns }: { patterns: DashboardData["patterns"] }) => {
             </ol>
           )}
         </div>
+        <Stat
+          label="Average odds"
+          value={averageOdds === null ? "–" : averageOdds.toFixed(2)}
+          sub={averageOdds === null ? "no bets yet" : "across all bets"}
+        />
+        <Stat
+          label="Average winning attempt"
+          value={
+            averageWinningAttempt === null
+              ? "–"
+              : averageWinningAttempt.toFixed(1)
+          }
+          sub={wonBets ? `across ${plural(wonBets, "win")}` : "no wins yet"}
+        />
+        <Stat
+          label="Highest attempt"
+          value={highestAttempt?.attempt ?? "–"}
+          sub={
+            highestAttempt
+              ? `in progression #${highestAttempt.progressionNumber}`
+              : "no bets yet"
+          }
+        />
+        <Stat
+          label="Average goals per game"
+          value={averageGoals === null ? "–" : averageGoals.perGame.toFixed(1)}
+          sub={
+            averageGoals
+              ? `across ${plural(averageGoals.games, "game")}`
+              : "no scores yet"
+          }
+        />
         <Stat
           label="Most common score"
           value={mostCommonScore?.score ?? "–"}

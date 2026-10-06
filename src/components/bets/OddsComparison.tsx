@@ -80,37 +80,35 @@ const OddsComparison = ({
           {emptyMessage}
         </p>
       ) : (
-        <ul className="flex flex-col border-t border-gray-200">
+        // One chip per bookmaker, scrolling sideways when they don't fit.
+        <ul className="-mx-1 flex gap-2 overflow-x-auto px-1 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {odds.map((row) => {
             const isBest = row.draw_odds === best;
             const isSelected = row.bookmaker === selectedBookmaker;
             return (
-              <li key={row.bookmaker} className="border-b border-gray-200">
+              <li key={row.bookmaker} className="shrink-0">
                 <button
                   type="button"
                   onClick={() => onPick(row.bookmaker, row.draw_odds)}
                   aria-pressed={isSelected}
-                  className={`flex w-full cursor-pointer items-center justify-between gap-4 px-2 py-2 text-left transition-colors hover:bg-gray-50 ${isSelected ? "bg-gray-100 hover:bg-gray-100" : ""}`}
+                  title={
+                    row.price_changed_at
+                      ? `Price moved ${formatShortDate(row.price_changed_at)}`
+                      : undefined
+                  }
+                  className={`flex cursor-pointer items-baseline gap-2 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition-colors ${
+                    isSelected
+                      ? "border-black bg-black text-white"
+                      : `text-gray-700 border-black`
+                  }`}
                 >
-                  <span className="flex min-w-0 items-baseline gap-2">
-                    <span
-                      className={`truncate text-sm ${isBest ? "font-medium text-black" : "text-gray-800"}`}
-                    >
-                      {row.bookmaker}
-                    </span>
-                    {isBest && (
-                      <span className="text-[11px] tracking-wide text-black uppercase">
-                        Best
-                      </span>
-                    )}
-                    {row.price_changed_at && (
-                      <span className="hidden text-xs text-gray-400 sm:inline">
-                        moved {formatShortDate(row.price_changed_at)}
-                      </span>
-                    )}
+                  <span>
+                    {row.bookmaker}
+                    {/* The best price is marked in words, not only by its border. */}
+                    {isBest && <span className="sr-only"> (best price)</span>}
                   </span>
                   <span
-                    className={`font-mono text-sm ${isBest ? "font-medium text-black" : "text-gray-600"}`}
+                    className={`font-mono font-medium tabular-nums ${isSelected ? "text-white" : "text-black"}`}
                   >
                     {row.draw_odds.toFixed(2)}
                   </span>

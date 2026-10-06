@@ -151,6 +151,7 @@ export const dashboardData: DashboardData = {
     highestAttempt: { attempt: 6, progressionNumber: 9 },
     mostCommonScore: { score: "1-1", result: "draw", count: 9, of: 45 },
     mostCommonDrawScore: { score: "1-1", count: 9, of: 14 },
+    averageGoals: { perGame: 2.36, games: 45 },
     topBookmakers: [
       { name: "BetPlay", bets: 21 },
       { name: "Betano", bets: 14 },

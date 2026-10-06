@@ -170,6 +170,8 @@ export type DashboardData = {
     } | null;
     // The same, among draws only (e.g. 1-1 vs 0-0).
     mostCommonDrawScore: { score: string; count: number; of: number } | null;
+    // Mean total goals (home + away) across the bets with a final score.
+    averageGoals: { perGame: number; games: number } | null;
   };
   // The next selected match to bet on: the earliest one with no bet yet that
   // hasn't kicked off (and, with a bet pending, starts after it). null when
