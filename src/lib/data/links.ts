@@ -1,5 +1,6 @@
 import {
   ChartColumn,
+  Layers,
   LayoutDashboard,
   ReceiptText,
   Settings,
@@ -25,6 +26,12 @@ export const links: NavLink[] = [
     href: "/bets",
     icon: ReceiptText,
     keywords: ["bets", "history", "log", "list"],
+  },
+  {
+    label: "Progressions",
+    href: "/progressions",
+    icon: Layers,
+    keywords: ["progressions", "progression", "attempts", "history"],
   },
   {
     label: "Draw odds",
