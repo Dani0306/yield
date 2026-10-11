@@ -211,11 +211,12 @@ export type ResultOddsSummary = {
 // The bet placed from a model result (see bets.model_result_id).
 export type ResultBet = { id: number; status: BetStatus };
 
-// A pending bet's match as the live scores API sees it. Scores read
-// "home-away" ("1-0"). minute is the API's clock ("63’", "HT"), when given.
+// A pending bet's match: its final score once it ends, from the scores API.
+// Scores read "home-away" ("1-0"). While it runs there's no score: the
+// minute is worked out from the kick-off time (src/lib/utils/match-clock.ts).
 export type LiveScore =
   | { state: "not_started" }
-  | { state: "live"; score: string; minute: string | null }
+  | { state: "in_play" }
   | { state: "finished"; score: string; afterExtraTime: boolean }
   | { state: "cancelled" }
   // The API has no match for these teams at this kick-off.

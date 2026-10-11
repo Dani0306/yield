@@ -6,8 +6,9 @@ import type { LiveScore } from "@/types";
 
 // Free API Live Football Data (RapidAPI). Server-only: the key never reaches
 // the browser.
-// Free plan: 100 requests a month, so one search request answers everything
-// (match, status and score) and its answer is reused for a few minutes.
+// Free plan: 100 requests a month, so it's only asked once a match may have
+// ended, one search request answers everything (match, status and score),
+// and its answer is reused for a few minutes.
 
 const HOST = "free-api-live-football-data.p.rapidapi.com";
 const CACHE_SECONDS = 3 * 60;
@@ -81,25 +82,21 @@ const findMatch = (
 const toLiveScore = ({ status = {} }: ApiMatch): LiveScore => {
   if (status.cancelled) return { state: "cancelled" };
   if (!status.started) return { state: "not_started" };
+  if (!status.finished) return { state: "in_play" };
 
   const score = status.scoreStr ? parseScore(status.scoreStr) : null;
   if (!score) return { state: "unavailable" };
 
-  if (status.finished)
-    return {
-      state: "finished",
-      score: score.text,
-      // 1X2 bets settle on 90 minutes; a score after extra time or
-      // penalties needs a look before it's used.
-      afterExtraTime: /aet|pen|ap/i.test(status.reason?.short ?? ""),
-    };
-
-  // The clock comes with invisible direction marks ("63‎’‎").
-  const minute = status.liveTime?.short?.replace(/[‎‏]/g, "");
-  return { state: "live", score: score.text, minute: minute || null };
+  return {
+    state: "finished",
+    score: score.text,
+    // 1X2 bets settle on 90 minutes; a score after extra time or
+    // penalties needs a look before it's used.
+    afterExtraTime: /aet|pen|ap/i.test(status.reason?.short ?? ""),
+  };
 };
 
-// The live state of the match these teams play at `kickOff` (ms). Searches
+// The state (and final score) of the match these teams play at `kickOff` (ms). Searches
 // by the home team and, only when that finds nothing, by the away team.
 export const findLiveScore = async (match: {
   homeTeam: string;

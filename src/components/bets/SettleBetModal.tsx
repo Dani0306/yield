@@ -44,7 +44,7 @@ const options = (bet: Bet) =>
     profit: number;
   }[];
 
-// What the live scores API said, under the score field.
+// Where the match stands, under the score field.
 const liveScoreNote = (live: LiveScore | null | undefined) => {
   if (live === undefined) return "Looking up the final score…";
   switch (live?.state) {
@@ -52,8 +52,8 @@ const liveScoreNote = (live: LiveScore | null | undefined) => {
       return live.afterExtraTime
         ? `Ended ${live.score} after extra time: enter the 90-minute score`
         : "Final score from live data";
-    case "live":
-      return `Still playing: ${live.score}${live.minute ? ` · ${live.minute}` : ""}`;
+    case "in_play":
+      return "Still playing: the final score shows once it ends";
     case "not_started":
       return "Not started yet";
     case "cancelled":
