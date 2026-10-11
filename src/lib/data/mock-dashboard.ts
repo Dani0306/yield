@@ -115,6 +115,7 @@ export const dashboardData: DashboardData = {
       bet: pendingBet,
       potentialReturn: pendingBet.amount * pendingBet.odds, // $ 99.000
       potentialProfit: pendingBet.amount * (pendingBet.odds - 1), // $ 69.000
+      liveScore: null,
     },
     // If attempt 5 loses: recover 8.5u + 1u target at ~3.20 odds.
     nextStake: { units: 4.5, amount: 4.5 * UNIT_VALUE },

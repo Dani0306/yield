@@ -14,6 +14,7 @@ import { Section, Stat, StatGrid } from "./DashboardUI";
 import { matchName } from "@/lib/utils/bets";
 import { useModal } from "../providers/ModalProvider";
 import PageButton from "../ui/PageButton";
+import LiveScore from "./LiveScore";
 
 type CurrentProgressionData = NonNullable<DashboardData["currentProgression"]>;
 
@@ -47,7 +48,7 @@ const CurrentBet = ({
 
   if (!currentBet) return null;
 
-  const { bet, potentialReturn } = currentBet;
+  const { bet, potentialReturn, liveScore } = currentBet;
   // What the whole progression nets if this bet wins.
   const progressionResult = potentialReturn - investedAmount;
 
@@ -75,6 +76,8 @@ const CurrentBet = ({
           {formatDateTime(bet.match_date)} · {bet.bookmaker}
         </span>
       </div>
+
+      <LiveScore bet={bet} live={liveScore} />
 
       <div className="grid grid-cols-2 gap-6 border-t border-gray-200 pt-5 lg:grid-cols-4">
         <BetFigure label="Odds" value={bet.odds.toFixed(2)} />

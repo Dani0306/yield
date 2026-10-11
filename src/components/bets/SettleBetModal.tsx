@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Modal from "../ui/Modal";
 import { settleBet } from "@/actions/bets/settleBet";
+import { fetchBetScore } from "@/actions/bets/fetchBetScore";
 import { formatMoney, withSign } from "@/lib/utils/fn";
 import { matchName, outcomeFromScore, parseScore } from "@/lib/utils/bets";
-import type { Bet, SettleOutcome } from "@/types";
+import type { Bet, LiveScore, SettleOutcome } from "@/types";
 
 type SettleBetModalProps = {
   bet: Bet;
@@ -43,6 +44,29 @@ const options = (bet: Bet) =>
     profit: number;
   }[];
 
+// What the live scores API said, under the score field.
+const liveScoreNote = (live: LiveScore | null | undefined) => {
+  if (live === undefined) return "Looking up the final score…";
+  switch (live?.state) {
+    case "finished":
+      return live.afterExtraTime
+        ? `Ended ${live.score} after extra time: enter the 90-minute score`
+        : "Final score from live data";
+    case "live":
+      return `Still playing: ${live.score}${live.minute ? ` · ${live.minute}` : ""}`;
+    case "not_started":
+      return "Not started yet";
+    case "cancelled":
+      return "Match cancelled: the bet is void";
+    case "not_found":
+      return "Match not found in live data: enter the score";
+    case "unavailable":
+      return "Live data unavailable: enter the score";
+    default:
+      return null;
+  }
+};
+
 const profitClass = (profit: number) =>
   profit > 0 ? "text-green-700" : profit < 0 ? "text-red-700" : "text-gray-500";
 
@@ -51,6 +75,8 @@ const SettleBetModal = ({ bet, onCancel, onSettled }: SettleBetModalProps) => {
   const [score, setScore] = useState("");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // undefined while loading.
+  const [live, setLive] = useState<LiveScore | null | undefined>(undefined);
 
   // A valid score picks the matching outcome, so typing "1-1" is enough.
   // A void bet keeps "Void" selected whatever the score.
@@ -59,6 +85,32 @@ const SettleBetModal = ({ bet, onCancel, onSettled }: SettleBetModalProps) => {
     const parsed = parseScore(value);
     if (parsed && outcome !== "void") setOutcome(outcomeFromScore(parsed));
   };
+
+  // The final score from live data fills the form, so settling is one
+  // click. Anything you've typed first is kept.
+  useEffect(() => {
+    let active = true;
+    fetchBetScore(bet.id)
+      .catch(() => ({ state: "unavailable" }) as const)
+      .then((result) => {
+        if (!active) return;
+        setLive(result);
+        if (result?.state === "finished" && !result.afterExtraTime) {
+          const parsed = parseScore(result.score);
+          setScore((typed) => typed || result.score);
+          setOutcome((picked) =>
+            picked ?? (parsed ? outcomeFromScore(parsed) : null),
+          );
+        }
+        if (result?.state === "cancelled")
+          setOutcome((picked) => picked ?? "void");
+      });
+    return () => {
+      active = false;
+    };
+  }, [bet.id]);
+
+  const note = liveScoreNote(live);
 
   const handleSettle = () => {
     if (!outcome) return;
@@ -95,6 +147,7 @@ const SettleBetModal = ({ bet, onCancel, onSettled }: SettleBetModalProps) => {
             disabled={isPending}
             className="w-full border border-gray-300 px-3 py-2.5 font-mono text-sm text-gray-800 outline-none transition-shadow placeholder:text-gray-400 focus:border-black focus:ring-1 focus:ring-black"
           />
+          {note && <p className="text-xs text-gray-500">{note}</p>}
         </div>
 
         <fieldset className="flex flex-col" disabled={isPending}>

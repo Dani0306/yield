@@ -122,6 +122,7 @@ export type DashboardData = {
       bet: Bet;
       potentialReturn: number;
       potentialProfit: number;
+      liveScore: LiveScore | null;
     } | null;
     // Stake for the next attempt (after the current bet, if it loses).
     nextStake: { units: number; amount: number };
@@ -209,6 +210,18 @@ export type ResultOddsSummary = {
 
 // The bet placed from a model result (see bets.model_result_id).
 export type ResultBet = { id: number; status: BetStatus };
+
+// A pending bet's match as the live scores API sees it. Scores read
+// "home-away" ("1-0"). minute is the API's clock ("63’", "HT"), when given.
+export type LiveScore =
+  | { state: "not_started" }
+  | { state: "live"; score: string; minute: string | null }
+  | { state: "finished"; score: string; afterExtraTime: boolean }
+  | { state: "cancelled" }
+  // The API has no match for these teams at this kick-off.
+  | { state: "not_found" }
+  // The API failed or the monthly quota ran out.
+  | { state: "unavailable" };
 
 // The columns that identify one result (the table's unique key).
 export type ModelResultKey = Pick<

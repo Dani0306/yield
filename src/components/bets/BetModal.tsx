@@ -27,6 +27,8 @@ type BetModalProps = {
   onClose: () => void;
   // Shows as disabled until editing is built.
   onEdit?: (bet: Bet) => void;
+  // "settle" opens straight on settling, e.g. from a finished match.
+  initialStep?: Step;
 };
 
 // Delete and settle ask first, in a smaller modal on top of this one.
@@ -142,8 +144,13 @@ const EdgeHighlight = ({ bet }: { bet: Bet }) => {
   );
 };
 
-const BetModal = ({ bet, onClose, onEdit }: BetModalProps) => {
-  const [step, setStep] = useState<Step>("details");
+const BetModal = ({
+  bet,
+  onClose,
+  onEdit,
+  initialStep = "details",
+}: BetModalProps) => {
+  const [step, setStep] = useState<Step>(initialStep);
   const isPending = bet.status === "pending";
   const payout = betPayout(bet);
 

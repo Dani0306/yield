@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { getBets } from "@/actions/bets/getBets";
+import { getBetLiveScore } from "@/actions/bets/getBetLiveScore";
 import { getProgressions } from "@/actions/progressions/getProgressions";
 import { getModelResults } from "@/actions/model_results/getModelResults";
 import { kickOffTime } from "@/lib/utils/results";
@@ -113,8 +114,10 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     .sort((a, b) => b.bets - a.bets || a.name.localeCompare(b.name))
     .slice(0, 3);
 
-  // Final scores of settled bets (void bets may have none).
+  // Final scores of settled bets (void bets may have none). A pending bet
+  // can hold its match's final score before it's settled; it waits.
   const scores = bets
+    .filter((bet) => bet.status !== "pending")
     .map((bet) => (bet.score ? parseScore(bet.score) : null))
     .filter((score) => score !== null);
   const drawScores = scores.filter((s) => s.home === s.away);
@@ -234,6 +237,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
             bet: pending,
             potentialReturn: round(pending.amount * pending.odds),
             potentialProfit: round(pending.amount * (pending.odds - 1)),
+            liveScore: await getBetLiveScore(pending),
           }
         : null,
       nextStake,
