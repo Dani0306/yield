@@ -8,7 +8,7 @@ import type { Bet, LiveScore as LiveScoreData } from "@/types";
 
 // Once the 90 are up, ask the server for the final score this often, and
 // give up after this long past kick-off (a reload still asks again).
-const CHECK_EVERY_MS = 3 * 60_000;
+const CHECK_EVERY_MS = 2 * 60_000;
 const STOP_CHECKING_AFTER_MS = 150 * 60_000;
 
 // "1-0" → "1 – 0".
@@ -46,7 +46,8 @@ const LiveScore = ({ bet, live }: { bet: Bet; live: LiveScoreData | null }) => {
   }, []);
 
   // After the 90: check now, then every few minutes until the final score.
-  // The server reuses the API answer for 3 minutes, so this stays cheap.
+  // Each check costs one API request (the server keeps answers for a
+  // minute), so 2 minutes balances speed against the monthly quota.
   useEffect(() => {
     if (!isWaiting) return;
     const check = () => {

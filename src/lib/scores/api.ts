@@ -7,11 +7,18 @@ import type { LiveScore } from "@/types";
 // Free API Live Football Data (RapidAPI). Server-only: the key never reaches
 // the browser.
 // Free plan: 100 requests a month, so it's only asked once a match may have
-// ended, one search request answers everything (match, status and score),
-// and its answer is reused for a few minutes.
+// ended, and every answer is reused (see the cache times below).
+//
+// Two steps: search finds the match's id, then the status endpoint says
+// whether it's over and the final score. Search can't do both: its status
+// lags hours behind (a finished match still reads "not started").
 
 const HOST = "free-api-live-football-data.p.rapidapi.com";
-const CACHE_SECONDS = 3 * 60;
+
+// A match's id never changes, so one search lasts the whole match.
+const SEARCH_CACHE_SECONDS = 24 * 60 * 60;
+// Short, so a finished match shows up within a minute of the next check.
+const STATUS_CACHE_SECONDS = 60;
 
 // Kick-offs further apart than this are different games.
 const KICK_OFF_TOLERANCE_MS = 60 * 60_000;
@@ -22,35 +29,53 @@ type ApiMatch = {
   matchDate: string;
   homeTeamName: string;
   awayTeamName: string;
-  status?: {
-    started?: boolean;
-    finished?: boolean;
-    cancelled?: boolean;
-    scoreStr?: string;
-    liveTime?: { short?: string };
-    reason?: { short?: string };
-  };
 };
 
-// Matches (and teams, leagues…) whose names contain `query`.
-const searchMatches = async (query: string): Promise<ApiMatch[]> => {
+type ApiStatus = {
+  started?: boolean;
+  finished?: boolean;
+  cancelled?: boolean;
+  scoreStr?: string;
+  reason?: { short?: string };
+};
+
+const request = async <T>(
+  path: string,
+  params: Record<string, string>,
+  revalidate: number,
+): Promise<T> => {
   const key = process.env.RAPIDAPI_KEY;
   if (!key) throw new Error("RAPIDAPI_KEY is not set");
 
   const res = await fetch(
-    `https://${HOST}/football-matches-search?${new URLSearchParams({ search: query })}`,
+    `https://${HOST}/${path}?${new URLSearchParams(params)}`,
     {
       headers: { "x-rapidapi-host": HOST, "x-rapidapi-key": key },
       signal: AbortSignal.timeout(10_000),
-      next: { revalidate: CACHE_SECONDS, tags: ["live-scores"] },
+      next: { revalidate, tags: ["live-scores"] },
     },
   );
-  if (!res.ok) throw new Error(`Live scores API ${res.status}`);
+  if (!res.ok) throw new Error(`Live scores API ${path} ${res.status}`);
+  return (await res.json()) as T;
+};
 
-  const body = (await res.json()) as {
-    response?: { suggestions?: ApiMatch[] };
-  };
+// Matches (and teams, leagues…) whose names contain `query`.
+const searchMatches = async (query: string): Promise<ApiMatch[]> => {
+  const body = await request<{ response?: { suggestions?: ApiMatch[] } }>(
+    "football-matches-search",
+    { search: query },
+    SEARCH_CACHE_SECONDS,
+  );
   return (body.response?.suggestions ?? []).filter((s) => s.type === "match");
+};
+
+const getMatchStatus = async (eventId: string): Promise<ApiStatus> => {
+  const body = await request<{ response?: { status?: ApiStatus } }>(
+    "football-get-match-status",
+    { eventid: eventId },
+    STATUS_CACHE_SECONDS,
+  );
+  return body.response?.status ?? {};
 };
 
 const shareWord = (a: Set<string>, b: Set<string>) =>
@@ -79,7 +104,7 @@ const findMatch = (
     .sort((a, b) => a.gap - b.gap)[0]?.candidate;
 };
 
-const toLiveScore = ({ status = {} }: ApiMatch): LiveScore => {
+const toLiveScore = (status: ApiStatus): LiveScore => {
   if (status.cancelled) return { state: "cancelled" };
   if (!status.started) return { state: "not_started" };
   if (!status.finished) return { state: "in_play" };
@@ -96,8 +121,9 @@ const toLiveScore = ({ status = {} }: ApiMatch): LiveScore => {
   };
 };
 
-// The state (and final score) of the match these teams play at `kickOff` (ms). Searches
-// by the home team and, only when that finds nothing, by the away team.
+// The state (and final score) of the match these teams play at `kickOff`
+// (ms). Searches by the home team and, only when that finds nothing, by the
+// away team.
 export const findLiveScore = async (match: {
   homeTeam: string;
   awayTeam: string;
@@ -106,6 +132,7 @@ export const findLiveScore = async (match: {
   const found =
     findMatch(match, await searchMatches(match.homeTeam)) ??
     findMatch(match, await searchMatches(match.awayTeam));
+  if (!found) return { state: "not_found" };
 
-  return found ? toLiveScore(found) : { state: "not_found" };
+  return toLiveScore(await getMatchStatus(found.id));
 };
