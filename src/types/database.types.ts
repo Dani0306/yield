@@ -264,6 +264,7 @@ export type Database = {
           first_name: string | null;
           id: string;
           last_name: string | null;
+          max_losses: number;
           total_budget: number;
           username: string | null;
         };
@@ -274,6 +275,7 @@ export type Database = {
           first_name?: string | null;
           id: string;
           last_name?: string | null;
+          max_losses?: number;
           total_budget?: number;
           username?: string | null;
         };
@@ -284,6 +286,7 @@ export type Database = {
           first_name?: string | null;
           id?: string;
           last_name?: string | null;
+          max_losses?: number;
           total_budget?: number;
           username?: string | null;
         };
@@ -293,6 +296,7 @@ export type Database = {
         Row: {
           created_at: string;
           end_date: string | null;
+          max_losses: number | null;
           id: number;
           number: number;
           start_date: string;
@@ -302,6 +306,7 @@ export type Database = {
         Insert: {
           created_at?: string;
           end_date?: string | null;
+          max_losses?: number | null;
           id?: never;
           number?: number;
           start_date?: string;
@@ -311,6 +316,7 @@ export type Database = {
         Update: {
           created_at?: string;
           end_date?: string | null;
+          max_losses?: number | null;
           id?: never;
           number?: number;
           start_date?: string;
@@ -324,6 +330,7 @@ export type Database = {
       progression_stats: {
         Row: {
           end_date: string | null;
+          max_losses: number | null;
           profit: number | null;
           profit_units: number | null;
           progression_number: number | null;

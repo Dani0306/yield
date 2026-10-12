@@ -10,12 +10,16 @@ export type ProfileInput = {
   username?: string;
   total_budget?: number;
   email_reminders?: boolean;
+  max_losses?: number;
 };
 
 const NAME_MAX = 50;
 const USERNAME = /^[a-z0-9_.]{3,30}$/;
 // numeric(12,2): up to 9.999.999.999,99.
 const BUDGET_MAX = 9_999_999_999;
+// Same range as the profiles.max_losses check constraint.
+const MAX_LOSSES_MIN = 1;
+const MAX_LOSSES_MAX = 20;
 
 // Trimmed text, or null when empty (clears the field).
 const clean = (text: string) => text.trim() || null;
@@ -54,6 +58,19 @@ export const updateProfile = async (
       return { error: "Your bankroll must be greater than 0" };
     if (budget > BUDGET_MAX) return { error: "That bankroll is too large" };
     update.total_budget = Math.round(budget);
+  }
+
+  if (input.max_losses !== undefined) {
+    const maxLosses = input.max_losses;
+    if (
+      !Number.isInteger(maxLosses) ||
+      maxLosses < MAX_LOSSES_MIN ||
+      maxLosses > MAX_LOSSES_MAX
+    )
+      return {
+        error: `The stop-loss must be between ${MAX_LOSSES_MIN} and ${MAX_LOSSES_MAX} losses`,
+      };
+    update.max_losses = maxLosses;
   }
 
   if (input.email_reminders !== undefined) {

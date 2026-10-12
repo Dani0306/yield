@@ -35,6 +35,7 @@ const mockProgression = (id: number): Progression => {
     start_date: first.match_date,
     end_date: status === "active" ? null : last.match_date,
     created_at: first.created_at,
+    max_losses: null,
   };
 };
 
@@ -59,5 +60,6 @@ export const mockProgressionStats: ProgressionWithStats[] =
       total_stake_units: sum(bets, "stake"),
       profit: sum(bets, "profit"),
       profit_units: sum(bets, "profit_units"),
+      max_losses: progression.max_losses,
     };
   });

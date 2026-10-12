@@ -53,7 +53,7 @@ const OverallStats = ({
         <Stat
           label="Progressions"
           value={overview.progressionsCompleted}
-          sub={`completed · ${overview.progressionsAbandoned} abandoned`}
+          sub={`completed · ${overview.progressionsLost} lost · ${overview.progressionsAbandoned} abandoned`}
         />
       </StatGrid>
     </Section>

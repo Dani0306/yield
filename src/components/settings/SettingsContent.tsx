@@ -18,6 +18,7 @@ import {
   STAKE_MULTIPLIER,
   UNITS_PER_BANKROLL,
   stakeAfterLosses,
+  stopLossCost,
   unitValue,
 } from "@/lib/utils/staking";
 import type { User } from "@/types";
@@ -206,6 +207,78 @@ const BankrollSection = ({ user }: { user: User }) => {
   );
 };
 
+// The stop-loss: how many lost bets a progression can take before it closes.
+const StopLossSection = ({ user }: { user: User }) => {
+  const [saved, setSaved] = useState(user.max_losses);
+  const [maxLosses, setMaxLosses] = useState(String(user.max_losses));
+  const { isPending, status, save, clearStatus } = useSave();
+
+  const value = Number(maxLosses);
+  const valid = Number.isInteger(value) && value >= 1 && value <= 20;
+  const dirty = valid && value !== saved;
+
+  const cost = valid ? stopLossCost(value, user.total_budget) : null;
+  const lastStake = valid
+    ? stakeAfterLosses(value - 1, user.total_budget)
+    : null;
+  const bankShare =
+    cost && user.total_budget > 0 ? (cost.amount / user.total_budget) * 100 : 0;
+
+  return (
+    <SettingsSection
+      title="Stop-loss"
+      description="A progression closes as lost after this many lost bets, and the next bet starts a new progression at 1 unit. It caps what one bad run can cost. A progression keeps the limit it started with, so a change applies from the next progression on."
+    >
+      <div className="max-w-sm">
+        <Input
+          label="Losses before stopping (1–20)"
+          name="max_losses"
+          type="number"
+          value={maxLosses}
+          setValue={(next) => {
+            clearStatus();
+            setMaxLosses(next);
+          }}
+        />
+      </div>
+
+      {cost && lastStake ? (
+        <div className="grid grid-cols-2 gap-6 border-y border-gray-200 py-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-gray-500">Last stake</span>
+            <span className="font-mono text-2xl tracking-tight text-black">
+              {formatMoney(lastStake.amount)}
+            </span>
+            <span className="text-xs text-gray-500">
+              {formatUnits(lastStake.units)}
+            </span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-gray-500">Worst case</span>
+            <span className="font-mono text-2xl tracking-tight text-black">
+              {formatMoney(cost.amount)}
+            </span>
+            <span className="text-xs text-gray-500">
+              {formatUnits(cost.units)} · {bankShare.toFixed(1)}% of bankroll
+            </span>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500">
+          Enter a whole number from 1 to 20.
+        </p>
+      )}
+
+      <SaveRow
+        dirty={dirty}
+        isPending={isPending}
+        status={status}
+        onSave={() => save({ max_losses: value }, () => setSaved(value))}
+      />
+    </SettingsSection>
+  );
+};
+
 const ProfileSection = ({ user }: { user: User }) => {
   const initial = {
     first_name: user.first_name ?? "",
@@ -372,15 +445,16 @@ const AccountSection = ({ user }: { user: User }) => {
   );
 };
 
-// The settings page: bankroll (drives every stake), profile, notifications
-// and account.
+// The settings page: bankroll (drives every stake), stop-loss, profile,
+// notifications and account.
 const SettingsContent = ({ user }: { user: User }) => (
   <PageContainer
     title="Settings"
-    description="Your bankroll, profile, notifications and account."
+    description="Your bankroll, stop-loss, profile, notifications and account."
   >
     <div className="flex flex-col">
       <BankrollSection user={user} />
+      <StopLossSection user={user} />
       <ProfileSection user={user} />
       <NotificationsSection user={user} />
       <AccountSection user={user} />

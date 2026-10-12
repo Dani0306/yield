@@ -98,6 +98,7 @@ const progressionStats = (
   total_stake_units: units,
   profit: profitUnits * UNIT_VALUE,
   profit_units: profitUnits,
+  max_losses: null,
 });
 
 export const dashboardData: DashboardData = {
@@ -119,6 +120,10 @@ export const dashboardData: DashboardData = {
     },
     // If attempt 5 loses: recover 8.5u + 1u target at ~3.20 odds.
     nextStake: { units: 4.5, amount: 4.5 * UNIT_VALUE },
+    maxLosses: 8,
+    losses: 4,
+    stopLossCost: { units: 49.26, amount: 49.26 * UNIT_VALUE },
+    onLastAttempt: false,
     bets: currentBets,
   },
 
@@ -134,6 +139,7 @@ export const dashboardData: DashboardData = {
     settledBets: 45,
     progressionsCompleted: 14,
     progressionsAbandoned: 1,
+    progressionsLost: 0,
   },
 
   edge: {

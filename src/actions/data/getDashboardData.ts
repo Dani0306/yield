@@ -6,7 +6,7 @@ import { getBetLiveScore } from "@/actions/bets/getBetLiveScore";
 import { getProgressions } from "@/actions/progressions/getProgressions";
 import { getModelResults } from "@/actions/model_results/getModelResults";
 import { kickOffTime } from "@/lib/utils/results";
-import { stakeAfterLosses } from "@/lib/utils/staking";
+import { stakeAfterLosses, stopLossCost } from "@/lib/utils/staking";
 import { outcomeFromScore, parseScore } from "@/lib/utils/bets";
 import type { Bet, DashboardData, ProgressionWithStats } from "@/types";
 
@@ -82,6 +82,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
       .length,
     progressionsAbandoned: progressions.filter((p) => p.status === "abandoned")
       .length,
+    progressionsLost: progressions.filter((p) => p.status === "lost").length,
   };
 
   // ── Edge ───────────────────────────────────────────────────
@@ -200,11 +201,17 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     const investedUnits = sum(progressionBets, (bet) => bet.stake);
 
     // Only lost bets raise the stake. The next stake assumes a pending bet
-    // loses too.
-    const losses =
-      progressionBets.filter((bet) => bet.status === "lost").length +
-      (pending ? 1 : 0);
-    const nextStake = stakeAfterLosses(losses, budget);
+    // loses too, unless that loss hits the stop-loss: then a new progression
+    // starts at 1 unit.
+    const settledLosses = progressionBets.filter(
+      (bet) => bet.status === "lost",
+    ).length;
+    const losses = settledLosses + (pending ? 1 : 0);
+    const maxLosses = active.max_losses;
+    const onLastAttempt = Boolean(
+      pending && maxLosses !== null && losses >= maxLosses,
+    );
+    const nextStake = stakeAfterLosses(onLastAttempt ? 0 : losses, budget);
 
     // Keep staking by the rule, as if every bet loses, until the bank runs
     // out. The pending bet's money is already committed.
@@ -232,6 +239,10 @@ export const getDashboardData = async (): Promise<DashboardData> => {
       investedUnits,
       bankExposurePercent: percent(investedAmount, currentBank),
       attemptsBankCanCover,
+      maxLosses,
+      losses: settledLosses,
+      stopLossCost: maxLosses === null ? null : stopLossCost(maxLosses, budget),
+      onLastAttempt,
       currentBet: pending
         ? {
             bet: pending,

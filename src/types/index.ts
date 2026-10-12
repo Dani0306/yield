@@ -60,6 +60,9 @@ export type ProgressionWithStats = {
   total_stake_units: number;
   profit: number;
   profit_units: number;
+  // Stop-loss: closes after this many lost bets. null: none (progressions
+  // from before the stop-loss).
+  max_losses: number | null;
 };
 
 export type Bet = Omit<
@@ -117,6 +120,15 @@ export type DashboardData = {
     bankExposurePercent: number;
     // More losing attempts the bank can afford at the current stake growth.
     attemptsBankCanCover: number;
+    // Stop-loss: the progression closes after this many lost bets (null on
+    // progressions from before the stop-loss), how many it has lost so far,
+    // and what it costs in total if it's hit.
+    maxLosses: number | null;
+    losses: number;
+    stopLossCost: { units: number; amount: number } | null;
+    // True when the pending bet is the last one before the stop: if it
+    // loses, the progression closes and the next stake is 1 unit again.
+    onLastAttempt: boolean;
     // The open bet, if any, with what it returns if it wins.
     currentBet: {
       bet: Bet;
@@ -141,6 +153,8 @@ export type DashboardData = {
     settledBets: number;
     progressionsCompleted: number;
     progressionsAbandoned: number;
+    // Closed at the stop-loss.
+    progressionsLost: number;
   };
   edge: {
     estimatedDrawRatePercent: number;

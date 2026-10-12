@@ -6,6 +6,9 @@
 //   1, 1.5, 2.25, 3.375… units. A void (cancelled) bet doesn't count, so the
 //   next bet repeats the same stake.
 // - A win ends the progression; the next one starts again at 1 unit.
+// - Stop-loss: a progression closes as lost after its maximum number of lost
+//   bets (8 by default, set in Settings), and the next one starts again at
+//   1 unit. The losses are never carried over.
 
 export const UNITS_PER_BANKROLL = 400;
 export const STAKE_MULTIPLIER = 1.5;
@@ -22,5 +25,18 @@ export const stakeAfterLosses = (losses: number, bankroll: number) => {
   return {
     units: Math.round(stake * 100) / 100,
     amount: Math.round(stake * unitValue(bankroll)),
+  };
+};
+
+// What a progression costs when it hits a stop-loss of `maxLosses`: every
+// stake up to and including the last allowed bet (8 → 49.26 units).
+export const stopLossCost = (maxLosses: number, bankroll: number) => {
+  const stakes = Array.from({ length: maxLosses }, (_, losses) =>
+    stakeAfterLosses(losses, bankroll),
+  );
+  return {
+    units:
+      Math.round(stakes.reduce((total, s) => total + s.units, 0) * 100) / 100,
+    amount: stakes.reduce((total, s) => total + s.amount, 0),
   };
 };

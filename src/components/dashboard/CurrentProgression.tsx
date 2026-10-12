@@ -58,6 +58,9 @@ const CurrentBet = ({
         <span className="flex items-center gap-2 text-xs text-gray-500">
           <span className="size-1.5 shrink-0 rounded-full bg-black" />
           Current bet · Pending · Attempt {bet.attempt_number}
+          {progression.onLastAttempt && (
+            <span className="text-black"> · Last before the stop-loss</span>
+          )}
         </span>
         <button
           type="button"
@@ -180,12 +183,21 @@ const CurrentProgression = ({
             value={formatPercent(progression.bankExposurePercent, 1)}
             sub={`of ${formatMoney(currentBank)} bank`}
           />
-          <Stat
-            size="lg"
-            label="Bank can cover"
-            value={progression.attemptsBankCanCover}
-            sub="more losing attempts"
-          />
+          {progression.maxLosses !== null && progression.stopLossCost ? (
+            <Stat
+              size="lg"
+              label="Stop-loss"
+              value={`${progression.losses} of ${progression.maxLosses}`}
+              sub={`losses · worst case ${formatMoney(progression.stopLossCost.amount)}`}
+            />
+          ) : (
+            <Stat
+              size="lg"
+              label="Bank can cover"
+              value={progression.attemptsBankCanCover}
+              sub="more losing attempts"
+            />
+          )}
         </StatGrid>
       </div>
     </Section>

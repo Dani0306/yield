@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-// Deletes a bet. If it was the winning bet, its progression reopens and the
-// empty progression started after the win is removed.
+// Deletes a bet. If its progression had closed (won, or stopped at its
+// stop-loss), the progression reopens and the empty progression started
+// after it is removed.
 // RLS makes sure only the signed-in user's bets can be deleted.
 export const deleteBet = async (betId: number) => {
   if (!Number.isInteger(betId)) return { error: "Invalid bet" };
@@ -21,7 +22,18 @@ export const deleteBet = async (betId: number) => {
   if (error) return { error: "Couldn't delete the bet" };
   if (!bet) return { error: "Bet not found" };
 
-  if (bet.status === "won") {
+  // Did this bet close its progression (its win, or a loss counted towards
+  // the stop-loss)? Then it reopens with one bet fewer.
+  const { data: progression } = await supabase
+    .from("progressions")
+    .select("status")
+    .eq("id", bet.progression_id)
+    .maybeSingle();
+  const reopens =
+    (bet.status === "won" || bet.status === "lost") &&
+    progression?.status === bet.status;
+
+  if (reopens) {
     const { data: active } = await supabase
       .from("progressions")
       .select("id, bets(count)")
