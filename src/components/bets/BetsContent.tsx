@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import PageContainer from "../layout/PageContainer";
 import Table, { type TableColumn } from "../layout/table/Table";
 import { formatMoney, formatShortDate, withSign } from "@/lib/utils/fn";
@@ -103,7 +104,18 @@ const BetsContent = ({ bets }: { bets: Bet[] }) => {
   const { openModal } = useModal();
 
   return (
-    <PageContainer title="Bets" description="See the full bet history">
+    <PageContainer
+      title="Bets"
+      description="See the full bet history"
+      actions={
+        <Link
+          href="/progressions"
+          className="text-xs text-gray-500 transition-colors hover:text-black"
+        >
+          Progressions archive
+        </Link>
+      }
+    >
       <Table
         columns={tableColumns}
         rows={bets}

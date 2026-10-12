@@ -29,9 +29,8 @@ type CreateBetProps = {
 const signClass = (value: number) =>
   value > 0 ? "text-green-700" : value < 0 ? "text-red-700" : "text-black";
 
-// Only what the user decides. The progression, attempt, stake and amount
-// come from the staking rule on the server; the advantage is calculated by
-// the database.
+// Only what the user decides. The stake and amount come from the flat
+// staking rule on the server; the advantage is calculated by the database.
 const CreateBet = ({
   onClose,
   homeTeam = "",
@@ -89,7 +88,7 @@ const CreateBet = ({
     <Modal
       size="md"
       title="New bet"
-      description="Stake and amount follow your progression automatically."
+      description="The stake is your flat stake, set in Settings."
       onClose={() => !isPending && onClose()}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">

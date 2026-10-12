@@ -17,7 +17,6 @@ const APP_URL = Deno.env.get("APP_URL") ?? "https://yield-sepia-one.vercel.app";
 
 // Same staking rule as src/lib/utils/staking.ts.
 const UNITS_PER_BANKROLL = 400;
-const STAKE_MULTIPLIER = 1.5;
 const BEST_ODDS_SHOWN = 3;
 
 type Result = {
@@ -29,7 +28,7 @@ type Result = {
   kick_off: string;
 };
 type Odds = { bookmaker: string; draw_odds: number; fetched_at: string };
-type Stake = { units: number; amount: number; afterPending: boolean };
+type Stake = { units: number; amount: number };
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -64,7 +63,7 @@ const escape = (text: string) =>
 const getRecipients = async () => {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, total_budget")
+    .select("id, total_budget, stake_percent")
     .eq("email_reminders", true);
   if (error) throw error;
 
@@ -77,41 +76,12 @@ const getRecipients = async () => {
   return recipients;
 };
 
-// The next bet's stake in the user's active progression: 1.5× per lost bet,
-// assuming a pending bet loses too (as the dashboard shows it).
-const getNextStake = async (
-  userId: string,
-  budget: number,
-): Promise<Stake | null> => {
+// The flat stake: the same share of the bankroll for every bet.
+const flatStake = (budget: number, percent: number): Stake | null => {
   if (budget <= 0) return null;
-  const { data: progression } = await supabase
-    .from("progressions")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  let losses = 0;
-  let afterPending = false;
-  if (progression) {
-    const { data: bets, error } = await supabase
-      .from("bets")
-      .select("status")
-      .eq("progression_id", progression.id);
-    if (error) throw error;
-    afterPending = bets.some((bet) => bet.status === "pending");
-    losses =
-      bets.filter((bet) => bet.status === "lost").length +
-      (afterPending ? 1 : 0);
-  }
-
-  const stake = STAKE_MULTIPLIER ** losses;
   return {
-    units: Math.round(stake * 100) / 100,
-    amount: Math.round((stake * budget) / UNITS_PER_BANKROLL),
-    afterPending,
+    units: Math.round(((percent * UNITS_PER_BANKROLL) / 100) * 100) / 100,
+    amount: Math.round((budget * percent) / 100),
   };
 };
 
@@ -142,10 +112,7 @@ const buildEmail = (result: Result, stake: Stake | null, odds: Odds[]) => {
     ["Your draw estimate", `${Number(result.draw_percentage).toFixed(1)}%`],
   ];
   if (stake)
-    rows.push([
-      stake.afterPending ? "Stake if your pending bet loses" : "Next stake",
-      `${money.format(stake.amount)} · ${units(stake.units)}`,
-    ]);
+    rows.push(["Stake", `${money.format(stake.amount)} · ${units(stake.units)}`]);
   for (const [i, o] of odds.entries())
     rows.push([
       i === 0 ? `Best draw odds (as of ${time.format(new Date(o.fetched_at))})` : "",
@@ -217,10 +184,9 @@ Deno.serve(async () => {
 
   const recipients = await getRecipients();
   const stakes = new Map(
-    await Promise.all(
-      recipients.map(
-        async (r) => [r.id, await getNextStake(r.id, Number(r.total_budget))] as const,
-      ),
+    recipients.map(
+      (r) =>
+        [r.id, flatStake(Number(r.total_budget), Number(r.stake_percent))] as const,
     ),
   );
 

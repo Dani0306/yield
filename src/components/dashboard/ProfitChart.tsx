@@ -171,7 +171,7 @@ const ProfitChart = ({ points }: { points: Point[] }) => {
                 />
               </svg>
 
-              {/* Notes on notable points, e.g. an abandoned progression */}
+              {/* Notes on notable points, e.g. the switch to flat stakes */}
               {points.map((point, i) =>
                 point.note ? (
                   <span

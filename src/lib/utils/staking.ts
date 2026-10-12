@@ -1,42 +1,29 @@
-// The staking rule. Stakes are never chosen by hand; they follow from how
-// many bets the progression has lost so far:
-// - 1 unit = bankroll / 400 (1.000.000 COP → 2.500 COP). The bankroll is the
-//   budget set in the profile, so the unit only changes when that's edited.
-// - The first bet stakes 1 unit; each lost bet raises the next stake 1.5×:
-//   1, 1.5, 2.25, 3.375… units. A void (cancelled) bet doesn't count, so the
-//   next bet repeats the same stake.
-// - A win ends the progression; the next one starts again at 1 unit.
-// - Stop-loss: a progression closes as lost after its maximum number of lost
-//   bets (8 by default, set in Settings), and the next one starts again at
-//   1 unit. The losses are never carried over.
+// The staking rule: flat stakes. Every bet stakes the same share of the
+// bankroll, whatever happened before it. Stakes are never chosen by hand.
+// - The stake is a % of the bankroll, set in Settings (1% by default:
+//   1.000.000 COP → 10.000 a bet). The bankroll is the budget set in the
+//   profile, not the current bank, so the stake only changes when one of
+//   the two settings is edited.
+// - 1 unit = bankroll / 400 (1.000.000 COP → 2.500 COP), the scale profits
+//   in units have always used, so a 1% stake is 4 units.
+//
+// Until October 2026 stakes followed progressions (×1.5 after each loss,
+// back to 1 unit after a win). Those bets keep their progression and
+// attempt number as history.
 
 export const UNITS_PER_BANKROLL = 400;
-export const STAKE_MULTIPLIER = 1.5;
+// Same range as the profiles.stake_percent check constraint.
+export const STAKE_PERCENT_MAX = 10;
 
 // Money per unit, e.g. 2.500 for a 1.000.000 bankroll.
 export const unitValue = (bankroll: number) => bankroll / UNITS_PER_BANKROLL;
 
-// Stake for the next bet after `losses` lost bets in the progression.
-// Units are rounded to 2 decimals (3.375 → 3.38) and the amount to whole
-// pesos (8.437,50 → 8.438), both from the exact stake so rounding never
-// builds up from one bet to the next.
-export const stakeAfterLosses = (losses: number, bankroll: number) => {
-  const stake = STAKE_MULTIPLIER ** losses;
+// The stake every bet takes: `percent` % of the bankroll, in whole pesos,
+// and in units (2 decimals).
+export const flatStake = (bankroll: number, percent: number) => {
+  const amount = Math.round((bankroll * percent) / 100);
   return {
-    units: Math.round(stake * 100) / 100,
-    amount: Math.round(stake * unitValue(bankroll)),
-  };
-};
-
-// What a progression costs when it hits a stop-loss of `maxLosses`: every
-// stake up to and including the last allowed bet (8 → 49.26 units).
-export const stopLossCost = (maxLosses: number, bankroll: number) => {
-  const stakes = Array.from({ length: maxLosses }, (_, losses) =>
-    stakeAfterLosses(losses, bankroll),
-  );
-  return {
-    units:
-      Math.round(stakes.reduce((total, s) => total + s.units, 0) * 100) / 100,
-    amount: stakes.reduce((total, s) => total + s.amount, 0),
+    units: Math.round(((percent * UNITS_PER_BANKROLL) / 100) * 100) / 100,
+    amount,
   };
 };

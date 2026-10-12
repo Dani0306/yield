@@ -8,9 +8,8 @@ const plural = (count: number, word: string) =>
 const Patterns = ({ patterns }: { patterns: DashboardData["patterns"] }) => {
   const {
     averageOdds,
-    averageWinningAttempt,
-    wonBets,
-    highestAttempt,
+    longestWinningRun,
+    longestLosingRun,
     topBookmakers,
     mostCommonScore,
     mostCommonDrawScore,
@@ -53,22 +52,14 @@ const Patterns = ({ patterns }: { patterns: DashboardData["patterns"] }) => {
           sub={averageOdds === null ? "no bets yet" : "across all bets"}
         />
         <Stat
-          label="Average winning attempt"
-          value={
-            averageWinningAttempt === null
-              ? "–"
-              : averageWinningAttempt.toFixed(1)
-          }
-          sub={wonBets ? `across ${plural(wonBets, "win")}` : "no wins yet"}
+          label="Longest winning run"
+          value={longestWinningRun}
+          sub="draws in a row"
         />
         <Stat
-          label="Highest attempt"
-          value={highestAttempt?.attempt ?? "–"}
-          sub={
-            highestAttempt
-              ? `in progression #${highestAttempt.progressionNumber}`
-              : "no bets yet"
-          }
+          label="Longest losing run"
+          value={longestLosingRun}
+          sub="bets in a row without a draw"
         />
         <Stat
           label="Average goals per game"

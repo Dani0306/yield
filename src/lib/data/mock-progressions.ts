@@ -12,7 +12,7 @@ import { MOCK_USER_ID, mockBets } from "./mock-bets";
 const betsOf = (progressionId: number) =>
   mockBets
     .filter((bet) => bet.progression_id === progressionId)
-    .sort((a, b) => a.attempt_number - b.attempt_number);
+    .sort((a, b) => (a.attempt_number ?? 0) - (b.attempt_number ?? 0));
 
 const round = (n: number) => Math.round(n * 100) / 100;
 

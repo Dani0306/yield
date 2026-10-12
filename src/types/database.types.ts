@@ -18,7 +18,7 @@ export type Database = {
         Row: {
           advantage: number | null;
           amount: number;
-          attempt_number: number;
+          attempt_number: number | null;
           away_team: string;
           bookmaker: string;
           created_at: string;
@@ -30,7 +30,7 @@ export type Database = {
           odds: number;
           profit: number | null;
           profit_units: number | null;
-          progression_id: number;
+          progression_id: number | null;
           result: string | null;
           score: string | null;
           stake: number;
@@ -40,7 +40,7 @@ export type Database = {
         Insert: {
           advantage?: number | null;
           amount: number;
-          attempt_number: number;
+          attempt_number?: number | null;
           away_team: string;
           bookmaker: string;
           created_at?: string;
@@ -52,7 +52,7 @@ export type Database = {
           odds: number;
           profit?: number | null;
           profit_units?: number | null;
-          progression_id: number;
+          progression_id?: number | null;
           result?: string | null;
           score?: string | null;
           stake: number;
@@ -62,7 +62,7 @@ export type Database = {
         Update: {
           advantage?: number | null;
           amount?: number;
-          attempt_number?: number;
+          attempt_number?: number | null;
           away_team?: string;
           bookmaker?: string;
           created_at?: string;
@@ -74,7 +74,7 @@ export type Database = {
           odds?: number;
           profit?: number | null;
           profit_units?: number | null;
-          progression_id?: number;
+          progression_id?: number | null;
           result?: string | null;
           score?: string | null;
           stake?: number;
@@ -264,7 +264,7 @@ export type Database = {
           first_name: string | null;
           id: string;
           last_name: string | null;
-          max_losses: number;
+          stake_percent: number;
           total_budget: number;
           username: string | null;
         };
@@ -275,7 +275,7 @@ export type Database = {
           first_name?: string | null;
           id: string;
           last_name?: string | null;
-          max_losses?: number;
+          stake_percent?: number;
           total_budget?: number;
           username?: string | null;
         };
@@ -286,7 +286,7 @@ export type Database = {
           first_name?: string | null;
           id?: string;
           last_name?: string | null;
-          max_losses?: number;
+          stake_percent?: number;
           total_budget?: number;
           username?: string | null;
         };

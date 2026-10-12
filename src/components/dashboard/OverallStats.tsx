@@ -51,9 +51,17 @@ const OverallStats = ({
           sub={`${draws} of ${overview.settledBets} settled`}
         />
         <Stat
-          label="Progressions"
-          value={overview.progressionsCompleted}
-          sub={`completed · ${overview.progressionsLost} lost · ${overview.progressionsAbandoned} abandoned`}
+          label="Hit rate × odds"
+          value={
+            overview.hitRateTimesOdds === null
+              ? "–"
+              : overview.hitRateTimesOdds.toFixed(2)
+          }
+          sub={
+            overview.settledAverageOdds === null
+              ? "no settled bets yet"
+              : `average odds ${overview.settledAverageOdds.toFixed(2)} · break-even 1.00`
+          }
         />
       </StatGrid>
     </Section>

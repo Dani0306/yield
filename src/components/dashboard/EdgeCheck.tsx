@@ -27,12 +27,62 @@ const Bar = ({
   </div>
 );
 
+// The edge test: hit rate × average odds needs this many settled bets
+// before it says much, and this much above break-even (1.00) to count as an
+// edge rather than luck.
+const EDGE_TEST_BETS = 300;
+const EDGE_TARGET = 1.03;
+
+// What the figure means so far, in a sentence.
+const edgeVerdict = (factor: number | null, settledBets: number) => {
+  if (factor === null) return "Settle your first bets to start the test.";
+  const figure = factor.toFixed(2);
+  if (settledBets < EDGE_TEST_BETS)
+    return `${figure} so far, but ${EDGE_TEST_BETS - settledBets} more settled bets are needed before it means much: keep the stake flat.`;
+  if (factor >= EDGE_TARGET)
+    return `${figure}: likely a real edge. Keep going.`;
+  if (factor >= 1)
+    return `${figure}: too close to tell. Keep collecting at the same stake.`;
+  return `${figure}: no edge yet. Stop and rework the model before staking more.`;
+};
+
+const EdgeTest = ({
+  factor,
+  settledBets,
+}: {
+  factor: number | null;
+  settledBets: number;
+}) => (
+  <div className="flex flex-col gap-3 border-b border-gray-200 pb-6">
+    <div className="flex items-baseline justify-between gap-4">
+      <span className="text-xs text-gray-500">
+        Hit rate × odds over {EDGE_TEST_BETS} settled bets · target{" "}
+        {EDGE_TARGET.toFixed(2)}
+      </span>
+      <span className="shrink-0 font-mono text-xs text-black">
+        {Math.min(settledBets, EDGE_TEST_BETS)} / {EDGE_TEST_BETS}
+      </span>
+    </div>
+    <div className="h-1 bg-gray-100">
+      <div
+        className="h-full bg-black"
+        style={{
+          width: `${Math.min((settledBets / EDGE_TEST_BETS) * 100, 100)}%`,
+        }}
+      />
+    </div>
+    <p className="text-xs text-gray-500">{edgeVerdict(factor, settledBets)}</p>
+  </div>
+);
+
 const EdgeCheck = ({
   edge,
   settledBets,
+  hitRateTimesOdds,
 }: {
   edge: DashboardData["edge"];
   settledBets: number;
+  hitRateTimesOdds: number | null;
 }) => {
   const { estimatedDrawRatePercent: estimated, actualDrawRatePercent: actual } =
     edge;
@@ -51,6 +101,7 @@ const EdgeCheck = ({
 
   return (
     <Section title="Edge check">
+      <EdgeTest factor={hitRateTimesOdds} settledBets={settledBets} />
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-3">
           <span className="text-xs text-gray-500">

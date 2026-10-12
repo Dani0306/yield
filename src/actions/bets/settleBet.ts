@@ -20,73 +20,10 @@ const outcomes: Record<
   void: { status: "void", result: "void" },
 };
 
-type Supabase = Awaited<ReturnType<typeof createClient>>;
-
-// Closes the bet's progression when this result ends it: a win, or the loss
-// that reaches its stop-loss (max_losses; null on old progressions, which
-// have none). The next progression starts right away.
-const closeProgression = async (
-  supabase: Supabase,
-  status: BetStatus,
-  bet: { progression_id: number; match_date: string },
-): Promise<{ error: string | null }> => {
-  if (status !== "won" && status !== "lost") return { error: null };
-
-  const { data: progression } = await supabase
-    .from("progressions")
-    .select("start_date, max_losses")
-    .eq("id", bet.progression_id)
-    .single();
-
-  if (status === "lost") {
-    if (!progression?.max_losses) return { error: null };
-    const { count } = await supabase
-      .from("bets")
-      .select("id", { count: "exact", head: true })
-      .eq("progression_id", bet.progression_id)
-      .eq("status", "lost");
-    if ((count ?? 0) < progression.max_losses) return { error: null };
-  }
-
-  // End on the match date, but never before the progression started.
-  const endDate =
-    progression && progression.start_date > bet.match_date
-      ? progression.start_date
-      : bet.match_date;
-
-  const { error: progressionError } = await supabase
-    .from("progressions")
-    .update({ status, end_date: endDate })
-    .eq("id", bet.progression_id);
-
-  if (progressionError)
-    return {
-      error:
-        status === "won"
-          ? "Bet settled, but the progression wasn't closed"
-          : "Bet settled, but the progression wasn't stopped",
-    };
-
-  const { error: newProgressionError } = await supabase
-    .from("progressions")
-    .insert({});
-
-  if (newProgressionError)
-    return {
-      error:
-        status === "won"
-          ? "Progression won, but the next one wasn't started"
-          : "Progression stopped, but the next one wasn't started",
-    };
-
-  return { error: null };
-};
-
 // Settles a pending bet with its outcome and final score ("1-1"). The score
 // is required unless the bet is void, and must agree with the outcome.
-// A won bet closes its progression, and so does the lost bet that reaches
-// the progression's stop-loss; either way the next one begins again at
-// 1 unit.
+// At flat stakes a result changes nothing else: the next bet's stake is the
+// same either way.
 // Server Actions are public endpoints: validate the input, and let RLS
 // make sure the bet belongs to the signed-in user.
 export const settleBet = async (
@@ -115,14 +52,11 @@ export const settleBet = async (
     .update({ status, result, score: score?.text ?? null })
     .eq("id", betId)
     .eq("status", "pending")
-    .select("progression_id, match_date")
+    .select("id")
     .maybeSingle();
 
   if (error) return { error: "Couldn't settle the bet" };
   if (!bet) return { error: "Bet not found or already settled" };
-
-  const closed = await closeProgression(supabase, status, bet);
-  if (closed.error) return closed;
 
   revalidatePath("/dashboard");
   revalidatePath("/bets");

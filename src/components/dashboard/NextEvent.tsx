@@ -12,9 +12,8 @@ import type { DashboardData } from "@/types";
 
 type NextEventProps = {
   event: DashboardData["nextEvent"];
-  // Stake for the next bet, from the current progression (null when there's
-  // no progression yet).
-  nextStake: { units: number; amount: number } | null;
+  // The flat stake the bet will take.
+  stake: DashboardData["stake"];
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -87,7 +86,7 @@ const Countdown = ({
 
 // A heads-up at the top of the dashboard: the next selected match to bet on,
 // led by a live countdown to its kick-off.
-const NextEvent = ({ event, nextStake }: NextEventProps) => {
+const NextEvent = ({ event, stake }: NextEventProps) => {
   if (!event)
     return (
       <p className="text-xs text-gray-500">
@@ -107,9 +106,7 @@ const NextEvent = ({ event, nextStake }: NextEventProps) => {
       className="flex flex-col gap-6"
     >
       <div className="flex items-baseline justify-between gap-4">
-        <span className="text-xs text-gray-500">
-          {event.afterPending ? "Next up, after your pending bet" : "Next up"}
-        </span>
+        <span className="text-xs text-gray-500">Next up</span>
         <Link
           href="/draw-odds?filter=selected"
           className="shrink-0 text-xs text-black underline-offset-4 hover:underline"
@@ -131,18 +128,12 @@ const NextEvent = ({ event, nextStake }: NextEventProps) => {
           </span>
         </div>
 
-        {nextStake && (
-          <div className="flex flex-col gap-1 border-t border-gray-200 pt-4 lg:items-end lg:border-t-0 lg:pt-0">
-            <span className="font-mono text-base text-black">
-              {formatMoney(nextStake.amount)} · {formatUnits(nextStake.units)}
-            </span>
-            <span className="text-xs text-gray-500">
-              {event.afterPending
-                ? "stake if the pending bet loses"
-                : "next stake"}
-            </span>
-          </div>
-        )}
+        <div className="flex flex-col gap-1 border-t border-gray-200 pt-4 lg:items-end lg:border-t-0 lg:pt-0">
+          <span className="font-mono text-base text-black">
+            {formatMoney(stake.amount)} · {formatUnits(stake.units)}
+          </span>
+          <span className="text-xs text-gray-500">stake</span>
+        </div>
       </div>
     </section>
   );

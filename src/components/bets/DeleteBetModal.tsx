@@ -31,8 +31,10 @@ const DeleteBetModal = ({ bet, onCancel, onDeleted }: DeleteBetModalProps) => {
       title="Delete this bet?"
       description={
         <>
-          {matchName(bet)} · attempt {bet.attempt_number} of progression #
-          {bet.progression_number}. This can&apos;t be undone.
+          {matchName(bet)}
+          {bet.progression_number !== null &&
+            ` · attempt ${bet.attempt_number} of progression #${bet.progression_number}`}
+          . This can&apos;t be undone.
         </>
       }
       onClose={() => !isPending && onCancel()}

@@ -3,15 +3,14 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getBets } from "@/actions/bets/getBets";
 import { getBetLiveScore } from "@/actions/bets/getBetLiveScore";
-import { getProgressions } from "@/actions/progressions/getProgressions";
 import { getModelResults } from "@/actions/model_results/getModelResults";
 import { kickOffTime } from "@/lib/utils/results";
-import { stakeAfterLosses, stopLossCost } from "@/lib/utils/staking";
+import { flatStake } from "@/lib/utils/staking";
 import { outcomeFromScore, parseScore } from "@/lib/utils/bets";
-import type { Bet, DashboardData, ProgressionWithStats } from "@/types";
+import type { Bet, DashboardData } from "@/types";
 
-// Stop counting affordable attempts here; the figure only matters when low.
-const MAX_COVERED_ATTEMPTS = 50;
+// How many settled bets the recent results table shows.
+const RECENT_BETS = 10;
 
 const round = (n: number) => Math.round(n * 100) / 100;
 const percent = (part: number, whole: number) =>
@@ -34,31 +33,46 @@ const mostCommon = (values: string[]) => {
 };
 
 const isSettled = (bet: Bet) => bet.status === "won" || bet.status === "lost";
-const isClosed = (p: ProgressionWithStats) =>
-  p.status !== "active" && p.end_date;
 
-const getBudget = async () => {
+// Oldest match first; bets on the same kick-off in the order they were added.
+const byMatchDate = (a: Bet, b: Bet) =>
+  a.match_date.localeCompare(b.match_date) || a.id - b.id;
+
+// The longest run of bets in a row that `matches` (settled bets only, in
+// match order).
+const longestRun = (settled: Bet[], matches: (bet: Bet) => boolean) => {
+  let longest = 0;
+  let current = 0;
+  for (const bet of settled) {
+    current = matches(bet) ? current + 1 : 0;
+    longest = Math.max(longest, current);
+  }
+  return longest;
+};
+
+const getProfile = async () => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("total_budget")
+    .select("total_budget, stake_percent")
     .single();
 
-  if (error) throw new Error("Error getting the budget");
-  return data.total_budget;
+  if (error) throw new Error("Error getting the bankroll");
+  return data;
 };
 
-// Everything the dashboard shows, computed from the user's bets,
-// progressions and budget.
+// Everything the dashboard shows, computed from the user's bets and
+// bankroll.
 export const getDashboardData = async (): Promise<DashboardData> => {
-  const [bets, progressions, budget, selectedResults] = await Promise.all([
+  const [bets, profile, selectedResults] = await Promise.all([
     getBets(),
-    getProgressions(),
-    getBudget(),
+    getProfile(),
     getModelResults("selected"),
   ]);
+  const budget = profile.total_budget;
 
-  const settled = bets.filter(isSettled);
+  // Bets come newest first; runs and the chart read them oldest first.
+  const settled = bets.filter(isSettled).sort(byMatchDate);
   const won = settled.filter((bet) => bet.status === "won");
 
   // ── Overview ───────────────────────────────────────────────
@@ -67,6 +81,9 @@ export const getDashboardData = async (): Promise<DashboardData> => {
   const totalStaked = sum(settled, (bet) => bet.amount);
   const currentBank = round(budget + netProfit);
   const drawHitRatePercent = percent(won.length, settled.length);
+  const settledAverageOdds = settled.length
+    ? average(settled, (bet) => bet.odds)
+    : null;
 
   const overview: DashboardData["overview"] = {
     netProfit,
@@ -78,11 +95,13 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     totalStaked,
     drawHitRatePercent,
     settledBets: settled.length,
-    progressionsCompleted: progressions.filter((p) => p.status === "won")
-      .length,
-    progressionsAbandoned: progressions.filter((p) => p.status === "abandoned")
-      .length,
-    progressionsLost: progressions.filter((p) => p.status === "lost").length,
+    settledAverageOdds,
+    // Exact hit rate, not the rounded %, so 1.03 means 1.03.
+    hitRateTimesOdds:
+      settledAverageOdds === null
+        ? null
+        : Math.round((won.length / settled.length) * settledAverageOdds * 1000) /
+          1000,
   };
 
   // ── Edge ───────────────────────────────────────────────────
@@ -98,11 +117,6 @@ export const getDashboardData = async (): Promise<DashboardData> => {
   };
 
   // ── Patterns ───────────────────────────────────────────────
-  const highest = bets.reduce<Bet | null>(
-    (top, bet) => (!top || bet.attempt_number > top.attempt_number ? bet : top),
-    null,
-  );
-
   // Bets per bookmaker, most first; ties in alphabetical order.
   const bookmakerCounts = new Map<string, number>();
   for (const bet of bets)
@@ -128,16 +142,8 @@ export const getDashboardData = async (): Promise<DashboardData> => {
 
   const patterns: DashboardData["patterns"] = {
     averageOdds: bets.length ? average(bets, (bet) => bet.odds) : null,
-    averageWinningAttempt: won.length
-      ? average(won, (bet) => bet.attempt_number)
-      : null,
-    wonBets: won.length,
-    highestAttempt: highest
-      ? {
-          attempt: highest.attempt_number,
-          progressionNumber: highest.progression_number,
-        }
-      : null,
+    longestWinningRun: longestRun(settled, (bet) => bet.status === "won"),
+    longestLosingRun: longestRun(settled, (bet) => bet.status === "lost"),
     topBookmakers,
     mostCommonScore: topScore
       ? {
@@ -160,16 +166,10 @@ export const getDashboardData = async (): Promise<DashboardData> => {
   };
 
   // ── Next event ─────────────────────────────────────────────
-  // Only one bet runs at a time, so with a bet pending the next event has
-  // to start after it.
   const now = Date.now();
-  const pendingBet = bets.find((bet) => bet.status === "pending");
-  const notBefore = pendingBet
-    ? Math.max(now, Date.parse(pendingBet.match_date))
-    : now;
   const betOn = new Set(bets.map((bet) => bet.model_result_id));
   const [next] = selectedResults
-    .filter((r) => !betOn.has(r.id) && kickOffTime(r) > notBefore)
+    .filter((r) => !betOn.has(r.id) && kickOffTime(r) > now)
     .sort((a, b) => kickOffTime(a) - kickOffTime(b));
 
   const nextEvent: DashboardData["nextEvent"] = next
@@ -181,122 +181,58 @@ export const getDashboardData = async (): Promise<DashboardData> => {
         drawPercentage: next.draw_percentage,
         kickOff: new Date(kickOffTime(next)).toISOString(),
         minutesUntil: Math.round((kickOffTime(next) - now) / 60_000),
-        afterPending: Boolean(pendingBet),
       }
     : null;
 
-  // ── Current progression ────────────────────────────────────
-  // Progressions come newest first, so this is the latest active one.
-  const active = progressions.find((p) => p.status === "active");
-  let currentProgression: DashboardData["currentProgression"] = null;
-
-  if (active) {
-    const progressionBets = bets
-      .filter((bet) => bet.progression_id === active.progression_id)
-      .sort((a, b) => a.attempt_number - b.attempt_number);
-    const pending = progressionBets.find((bet) => bet.status === "pending");
-    const lastAttempt = progressionBets.at(-1)?.attempt_number ?? 0;
-
-    const investedAmount = sum(progressionBets, (bet) => bet.amount);
-    const investedUnits = sum(progressionBets, (bet) => bet.stake);
-
-    // Only lost bets raise the stake. The next stake assumes a pending bet
-    // loses too, unless that loss hits the stop-loss: then a new progression
-    // starts at 1 unit.
-    const settledLosses = progressionBets.filter(
-      (bet) => bet.status === "lost",
-    ).length;
-    const losses = settledLosses + (pending ? 1 : 0);
-    const maxLosses = active.max_losses;
-    const onLastAttempt = Boolean(
-      pending && maxLosses !== null && losses >= maxLosses,
-    );
-    const nextStake = stakeAfterLosses(onLastAttempt ? 0 : losses, budget);
-
-    // Keep staking by the rule, as if every bet loses, until the bank runs
-    // out. The pending bet's money is already committed.
-    let available = currentBank - (pending?.amount ?? 0);
-    let attemptsBankCanCover = 0;
-    while (budget > 0 && attemptsBankCanCover < MAX_COVERED_ATTEMPTS) {
-      const { amount } = stakeAfterLosses(
-        losses + attemptsBankCanCover,
-        budget,
-      );
-      if (amount > available) break;
-      available -= amount;
-      attemptsBankCanCover++;
-    }
-
-    currentProgression = {
-      id: active.progression_id,
-      number: active.progression_number,
-      attempt: pending ? pending.attempt_number : lastAttempt + 1,
-      longestProgressionAttempts: Math.max(
-        0,
-        ...progressions.map((p) => p.total_attempts),
-      ),
-      investedAmount,
-      investedUnits,
-      bankExposurePercent: percent(investedAmount, currentBank),
-      attemptsBankCanCover,
-      maxLosses,
-      losses: settledLosses,
-      stopLossCost: maxLosses === null ? null : stopLossCost(maxLosses, budget),
-      onLastAttempt,
-      currentBet: pending
-        ? {
-            bet: pending,
-            potentialReturn: round(pending.amount * pending.odds),
-            potentialProfit: round(pending.amount * (pending.odds - 1)),
-            liveScore: await getBetLiveScore(pending),
-          }
-        : null,
-      nextStake,
-      bets: progressionBets,
-    };
-  }
+  // ── Open bets ──────────────────────────────────────────────
+  // Earliest match first. Each asks the scores API only once its match may
+  // be over (see getBetLiveScore).
+  const openBets: DashboardData["openBets"] = await Promise.all(
+    bets
+      .filter((bet) => bet.status === "pending")
+      .sort(byMatchDate)
+      .map(async (bet) => ({
+        bet,
+        potentialReturn: round(bet.amount * bet.odds),
+        potentialProfit: round(bet.amount * (bet.odds - 1)),
+        liveScore: await getBetLiveScore(bet),
+      })),
+  );
 
   // ── Profit over time ───────────────────────────────────────
-  // Cumulative profit after each progression closed, oldest first.
-  const closed = progressions
-    .filter(isClosed)
-    .sort((a, b) => a.end_date!.localeCompare(b.end_date!));
-
+  // Cumulative profit after each settled bet, from 0 at the first one. The
+  // first bet without a progression marks the switch to flat stakes.
   const profitOverTime: DashboardData["profitOverTime"] = [];
-  if (progressions.length > 0) {
-    const firstStart = progressions.at(-1)!.start_date;
-    profitOverTime.push({ date: firstStart, cumulativeProfit: 0 });
+  if (settled.length > 0) {
+    profitOverTime.push({ date: settled[0].match_date, cumulativeProfit: 0 });
 
     let cumulativeProfit = 0;
-    for (const p of closed) {
-      cumulativeProfit = round(cumulativeProfit + p.profit);
+    let markedFlat = false;
+    for (const bet of settled) {
+      cumulativeProfit = round(cumulativeProfit + bet.profit);
+      const firstFlat = bet.progression_id === null && !markedFlat;
+      if (firstFlat) markedFlat = true;
       profitOverTime.push({
-        date: p.end_date!,
+        date: bet.match_date,
         cumulativeProfit,
-        note:
-          p.status === "won" ? undefined : `#${p.progression_number} · ${p.status}`,
-      });
-    }
-
-    // Today, when the open progression has moved the total.
-    if (netProfit !== cumulativeProfit) {
-      profitOverTime.push({
-        date: new Date().toISOString(),
-        cumulativeProfit: netProfit,
+        note: firstFlat ? "Flat stakes" : undefined,
       });
     }
   }
 
-  // ── Recent progressions ────────────────────────────────────
-  const recentProgressions = [...closed].reverse().slice(0, 5);
-
   return {
-    currentProgression,
+    stake: {
+      percent: profile.stake_percent,
+      ...flatStake(budget, profile.stake_percent),
+    },
+    openBets,
     overview,
     edge,
     patterns,
     nextEvent,
     profitOverTime,
-    recentProgressions,
+    recentBets: bets
+      .filter((bet) => bet.status !== "pending")
+      .slice(0, RECENT_BETS),
   };
 };

@@ -4,7 +4,7 @@ import Link from "next/link";
 import PageContainer from "../layout/PageContainer";
 import { Detail } from "../ui/Details";
 import { Section, Stat, StatGrid, signClass } from "../dashboard/DashboardUI";
-import ProgressionBetsTable from "../dashboard/ProgressionBetsTable";
+import BetsTable from "../bets/BetsTable";
 import {
   formatDateRange,
   formatDateTime,
@@ -74,10 +74,10 @@ const ProgressionContent = ({ progression, bets }: ProgressionContentProps) => {
       description={`${progressionStatusLabels[status]} · ${formatDateRange(start_date, end_date)}`}
       actions={
         <Link
-          href="/dashboard"
+          href="/progressions"
           className="text-xs text-gray-500 transition-colors hover:text-black"
         >
-          ← Dashboard
+          ← Progressions
         </Link>
       }
     >
@@ -134,11 +134,13 @@ const ProgressionContent = ({ progression, bets }: ProgressionContentProps) => {
           </StatGrid>
         </Section>
 
-        <ProgressionBetsTable
-          title="Bets"
-          progressionNumber={number}
-          bets={bets}
-        />
+        <Section title="Bets" meta={`#${number} · attempt 1 first`}>
+          <BetsTable
+            bets={bets}
+            withAttempt
+            emptyMessage="No bets in this progression"
+          />
+        </Section>
 
         <Section title="Details">
           <dl className="grid gap-x-12 border-t border-gray-200 sm:grid-cols-2">

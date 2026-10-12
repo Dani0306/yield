@@ -1,8 +1,10 @@
+import Link from "next/link";
 import PageContainer from "../layout/PageContainer";
 import ProgressionsTable from "./ProgressionsTable";
 import type { ProgressionWithStats } from "@/types";
 
-// Every progression so far, newest first, the active one included.
+// The progressions played before the switch to flat stakes, newest first.
+// History only: new bets don't belong to one.
 const ProgressionsContent = ({
   progressions,
 }: {
@@ -10,11 +12,14 @@ const ProgressionsContent = ({
 }) => (
   <PageContainer
     title="Progressions"
-    description="Every progression so far."
+    description="The progressions played before switching to flat stakes."
     actions={
-      <span className="text-xs text-gray-500">
-        {progressions.length} total
-      </span>
+      <Link
+        href="/bets"
+        className="text-xs text-gray-500 transition-colors hover:text-black"
+      >
+        ← Bets · {progressions.length} total
+      </Link>
     }
   >
     <ProgressionsTable progressions={progressions} />

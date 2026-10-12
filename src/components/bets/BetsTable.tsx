@@ -11,7 +11,6 @@ import {
   withSign,
 } from "@/lib/utils/fn";
 import type { Bet } from "@/types";
-import { Section } from "./DashboardUI";
 import {
   matchName,
   profitClass,
@@ -23,8 +22,14 @@ import {
 const advantageText = (bet: Bet) =>
   withSign(bet.advantage, (n) => formatPercent(n, 1));
 
+// Only bets from a progression have an attempt number.
+const attemptColumn: TableColumn<Bet> = {
+  key: "attempt_number",
+  header: "Attempt",
+  width: "8%",
+};
+
 const columns: TableColumn<Bet>[] = [
-  { key: "attempt_number", header: "Attempt", width: "8%" },
   {
     key: "match_date",
     header: "Date",
@@ -91,7 +96,8 @@ const MobileRow = (bet: Bet) => (
   <div className="flex items-start justify-between gap-4">
     <div className="flex min-w-0 flex-col gap-1">
       <span className="truncate text-black">
-        {bet.attempt_number} {matchName(bet)}
+        {bet.attempt_number !== null && `${bet.attempt_number} `}
+        {matchName(bet)}
       </span>
       <span className="truncate text-xs text-gray-500">
         {formatDayDate(bet.match_date)} · {bet.odds.toFixed(2)} ·{" "}
@@ -109,29 +115,34 @@ const MobileRow = (bet: Bet) => (
   </div>
 );
 
-const ProgressionBetsTable = ({
-  progressionNumber,
+// Without the attempt column, the match takes its width.
+const withoutAttempt = columns.map((column) =>
+  column.key === "match" ? { ...column, width: "30%" } : column,
+);
+
+// Bets in a table; a row opens the bet. `withAttempt` adds the attempt
+// number, for a progression's bets.
+const BetsTable = ({
   bets,
-  title = "Current progression bets",
+  withAttempt = false,
+  emptyMessage = "No bets yet",
 }: {
-  progressionNumber: number;
   bets: Bet[];
-  title?: string;
+  withAttempt?: boolean;
+  emptyMessage?: string;
 }) => {
   const { openModal } = useModal();
 
   return (
-    <Section title={title} meta={`#${progressionNumber} · attempt 1 first`}>
-      <Table
-        columns={columns}
-        rows={bets}
-        getRowKey={(bet) => bet.id}
-        onRowClick={(bet) => openModal("bet", { bet })}
-        renderMobileRow={MobileRow}
-        emptyMessage="No bets in this progression yet"
-      />
-    </Section>
+    <Table
+      columns={withAttempt ? [attemptColumn, ...columns] : withoutAttempt}
+      rows={bets}
+      getRowKey={(bet) => bet.id}
+      onRowClick={(bet) => openModal("bet", { bet })}
+      renderMobileRow={MobileRow}
+      emptyMessage={emptyMessage}
+    />
   );
 };
 
-export default ProgressionBetsTable;
+export default BetsTable;

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { STAKE_PERCENT_MAX } from "@/lib/utils/staking";
 import type { ProfileUpdate } from "@/types";
 
 export type ProfileInput = {
@@ -10,16 +11,13 @@ export type ProfileInput = {
   username?: string;
   total_budget?: number;
   email_reminders?: boolean;
-  max_losses?: number;
+  stake_percent?: number;
 };
 
 const NAME_MAX = 50;
 const USERNAME = /^[a-z0-9_.]{3,30}$/;
 // numeric(12,2): up to 9.999.999.999,99.
 const BUDGET_MAX = 9_999_999_999;
-// Same range as the profiles.max_losses check constraint.
-const MAX_LOSSES_MIN = 1;
-const MAX_LOSSES_MAX = 20;
 
 // Trimmed text, or null when empty (clears the field).
 const clean = (text: string) => text.trim() || null;
@@ -60,17 +58,18 @@ export const updateProfile = async (
     update.total_budget = Math.round(budget);
   }
 
-  if (input.max_losses !== undefined) {
-    const maxLosses = input.max_losses;
-    if (
-      !Number.isInteger(maxLosses) ||
-      maxLosses < MAX_LOSSES_MIN ||
-      maxLosses > MAX_LOSSES_MAX
-    )
+  if (input.stake_percent !== undefined) {
+    // numeric(4,2): 2 decimals, above 0 and up to the max (the check
+    // constraint).
+    const percent =
+      typeof input.stake_percent === "number"
+        ? Math.round(input.stake_percent * 100) / 100
+        : NaN;
+    if (!(percent > 0 && percent <= STAKE_PERCENT_MAX))
       return {
-        error: `The stop-loss must be between ${MAX_LOSSES_MIN} and ${MAX_LOSSES_MAX} losses`,
+        error: `The stake must be above 0% and up to ${STAKE_PERCENT_MAX}%`,
       };
-    update.max_losses = maxLosses;
+    update.stake_percent = percent;
   }
 
   if (input.email_reminders !== undefined) {
@@ -97,8 +96,8 @@ export const updateProfile = async (
     return { error: "Couldn't save your changes" };
   }
 
-  // Names show in the sidebar, the bankroll drives stakes and dashboard
-  // figures: refresh every page.
+  // Names show in the sidebar, the bankroll and stake drive stakes and
+  // dashboard figures: refresh every page.
   revalidatePath("/", "layout");
   return { error: null };
 };

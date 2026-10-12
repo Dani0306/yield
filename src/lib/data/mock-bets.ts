@@ -11,8 +11,9 @@ const round = (n: number) => Math.round(n * 100) / 100;
 
 type MockBetInput = {
   id: number;
-  progressionId: number;
-  attempt: number;
+  // Leave both out for a flat-stake bet (no progression).
+  progressionId?: number;
+  attempt?: number;
   date: string;
   home: string;
   away: string;
@@ -51,9 +52,9 @@ export const mockBet = ({
   return {
     id,
     user_id: MOCK_USER_ID,
-    progression_id: progressionId,
-    progression_number: progressionId,
-    attempt_number: attempt,
+    progression_id: progressionId ?? null,
+    progression_number: progressionId ?? null,
+    attempt_number: attempt ?? null,
     match_date: `${date}T18:00:00Z`,
     home_team: home,
     away_team: away,

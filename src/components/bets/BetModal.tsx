@@ -188,7 +188,11 @@ const BetModal = ({
         size="xl"
         className="p-4"
         onClose={onClose}
-        eyebrow={`Progression #${bet.progression_number} · Attempt ${bet.attempt_number} · #${String(bet.id).padStart(4, "0")}`}
+        eyebrow={`${
+          bet.progression_number === null
+            ? "Flat stake"
+            : `Progression #${bet.progression_number} · Attempt ${bet.attempt_number}`
+        } · #${String(bet.id).padStart(4, "0")}`}
         title={matchName(bet)}
         titleSize="lg"
         description={
@@ -220,8 +224,12 @@ const BetModal = ({
                 <Detail label="Stake" value={formatMoney(bet.amount)} mono />
                 <Detail label="Units" value={formatUnits(bet.stake)} mono />
                 <Detail
-                  label="Progression"
-                  value={`#${bet.progression_number} · attempt ${bet.attempt_number}`}
+                  label="Staking"
+                  value={
+                    bet.progression_number === null
+                      ? "Flat"
+                      : `Progression #${bet.progression_number} · attempt ${bet.attempt_number}`
+                  }
                   mono
                 />
               </div>

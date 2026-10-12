@@ -1,26 +1,28 @@
 "use client";
 
+import Link from "next/link";
 import PageContainer from "../layout/PageContainer";
 import { formatDate } from "@/lib/utils/fn";
 import type { DashboardData } from "@/types";
-import CurrentProgression from "./CurrentProgression";
+import BetsTable from "../bets/BetsTable";
+import { Section } from "./DashboardUI";
+import OpenBets from "./OpenBets";
 import NextEvent from "./NextEvent";
 import OverallStats from "./OverallStats";
 import EdgeCheck from "./EdgeCheck";
 import Patterns from "./Patterns";
-import ProgressionBetsTable from "./ProgressionBetsTable";
 import ProfitChart from "./ProfitChart";
-import PastProgressionsTable from "./PastProgressionsTable";
 
 const DashboardContent = ({ data }: { data: DashboardData }) => {
   const {
-    currentProgression,
+    stake,
+    openBets,
     overview,
     edge,
     patterns,
     nextEvent,
     profitOverTime,
-    recentProgressions,
+    recentBets,
   } = data;
 
   return (
@@ -35,24 +37,28 @@ const DashboardContent = ({ data }: { data: DashboardData }) => {
     >
       <div className="flex flex-col gap-14">
         <OverallStats overview={overview} />
-        <NextEvent
-          event={nextEvent}
-          nextStake={currentProgression?.nextStake ?? null}
-        />
-        <CurrentProgression
-          progression={currentProgression}
-          currentBank={overview.currentBank}
-        />
+        <NextEvent event={nextEvent} stake={stake} />
+        <OpenBets openBets={openBets} stake={stake} />
         <Patterns patterns={patterns} />
-        <EdgeCheck edge={edge} settledBets={overview.settledBets} />
-        {currentProgression && (
-          <ProgressionBetsTable
-            progressionNumber={currentProgression.number}
-            bets={currentProgression.bets}
-          />
-        )}
+        <EdgeCheck
+          edge={edge}
+          settledBets={overview.settledBets}
+          hitRateTimesOdds={overview.hitRateTimesOdds}
+        />
+        <Section
+          title="Recent results"
+          meta={
+            <Link
+              href="/bets"
+              className="text-black underline-offset-4 hover:underline"
+            >
+              All bets
+            </Link>
+          }
+        >
+          <BetsTable bets={recentBets} emptyMessage="No settled bets yet" />
+        </Section>
         <ProfitChart points={profitOverTime} />
-        <PastProgressionsTable progressions={recentProgressions} />
       </div>
     </PageContainer>
   );

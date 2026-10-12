@@ -15,7 +15,7 @@ export const getBets = async (): Promise<Bet[]> => {
     .from("bets")
     .select(BET_SELECT)
     .order("match_date", { ascending: false })
-    .order("attempt_number", { ascending: false });
+    .order("id", { ascending: false });
 
   if (error) throw new Error("Error getting bets");
 

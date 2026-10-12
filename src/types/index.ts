@@ -75,7 +75,8 @@ export type Bet = Omit<
   profit: number;
   profit_units: number;
   // The number of the progression this bet belongs to (see Progression).
-  progression_number: number;
+  // null for flat-stake bets, which belong to none.
+  progression_number: number | null;
 };
 export type BetInsert = Omit<
   TablesInsert<"bets">,
@@ -84,8 +85,8 @@ export type BetInsert = Omit<
   status?: BetStatus;
   result?: BetResult | null;
 };
-// What the new bet form sends. The progression, attempt number, stake and
-// amount are worked out on the server from the staking rule.
+// What the new bet form sends. The stake and amount are worked out on the
+// server from the staking rule.
 export type CreateBetInput = {
   match_date: string;
   home_team: string;
@@ -107,39 +108,16 @@ export type BetUpdate = Omit<
 
 // Everything the dashboard shows, in one object.
 export type DashboardData = {
-  // null when there's no active progression.
-  currentProgression: {
-    id: number;
-    // Shown as "#2"; id is the database key.
-    number: number;
-    attempt: number;
-    longestProgressionAttempts: number;
-    investedAmount: number;
-    investedUnits: number;
-    // Invested so far as a % of the current bank.
-    bankExposurePercent: number;
-    // More losing attempts the bank can afford at the current stake growth.
-    attemptsBankCanCover: number;
-    // Stop-loss: the progression closes after this many lost bets (null on
-    // progressions from before the stop-loss), how many it has lost so far,
-    // and what it costs in total if it's hit.
-    maxLosses: number | null;
-    losses: number;
-    stopLossCost: { units: number; amount: number } | null;
-    // True when the pending bet is the last one before the stop: if it
-    // loses, the progression closes and the next stake is 1 unit again.
-    onLastAttempt: boolean;
-    // The open bet, if any, with what it returns if it wins.
-    currentBet: {
-      bet: Bet;
-      potentialReturn: number;
-      potentialProfit: number;
-      liveScore: LiveScore | null;
-    } | null;
-    // Stake for the next attempt (after the current bet, if it loses).
-    nextStake: { units: number; amount: number };
-    bets: Bet[];
-  } | null;
+  // The stake every new bet takes (flat: the same for every bet).
+  stake: { percent: number; units: number; amount: number };
+  // Bets waiting for a result, earliest match first, each with what it
+  // returns if it wins and the state of its match.
+  openBets: {
+    bet: Bet;
+    potentialReturn: number;
+    potentialProfit: number;
+    liveScore: LiveScore | null;
+  }[];
   overview: {
     netProfit: number;
     netProfitUnits: number;
@@ -151,10 +129,11 @@ export type DashboardData = {
     totalStaked: number;
     drawHitRatePercent: number;
     settledBets: number;
-    progressionsCompleted: number;
-    progressionsAbandoned: number;
-    // Closed at the stop-loss.
-    progressionsLost: number;
+    // Mean odds of the settled bets, and the hit rate times them: what each
+    // peso staked comes back as at flat stakes. Above 1 the picks make
+    // money. null before the first settled bet.
+    settledAverageOdds: number | null;
+    hitRateTimesOdds: number | null;
   };
   edge: {
     estimatedDrawRatePercent: number;
@@ -167,12 +146,10 @@ export type DashboardData = {
   patterns: {
     // Mean decimal odds across every bet placed.
     averageOdds: number | null;
-    // Mean attempt number of the winning bets: how long a progression
-    // usually runs before it wins.
-    averageWinningAttempt: number | null;
-    wonBets: number;
-    // The furthest any progression has gone, and which one.
-    highestAttempt: { attempt: number; progressionNumber: number } | null;
+    // The most draws in a row, and the most settled bets in a row without
+    // one (void bets are skipped). 0 before the first settled bet.
+    longestWinningRun: number;
+    longestLosingRun: number;
     // Most used bookmakers, most bets first (up to 3).
     topBookmakers: { name: string; bets: number }[];
     // The final score seen most often across settled bets, how that match
@@ -189,8 +166,7 @@ export type DashboardData = {
     averageGoals: { perGame: number; games: number } | null;
   };
   // The next selected match to bet on: the earliest one with no bet yet that
-  // hasn't kicked off (and, with a bet pending, starts after it). null when
-  // there's none.
+  // hasn't kicked off. null when there's none.
   nextEvent: {
     resultId: number;
     homeTeam: string;
@@ -200,12 +176,12 @@ export type DashboardData = {
     // Kick-off as an ISO timestamp, and minutes from now when loaded.
     kickOff: string;
     minutesUntil: number;
-    // True when a bet is pending, so this one comes after it.
-    afterPending: boolean;
   } | null;
-  // `note` labels a notable point on the chart, e.g. an abandoned progression.
+  // Cumulative profit after each settled bet. `note` labels a notable point
+  // on the chart, e.g. the first flat-stake bet.
   profitOverTime: { date: string; cumulativeProfit: number; note?: string }[];
-  recentProgressions: ProgressionWithStats[];
+  // The latest bets, newest match first.
+  recentBets: Bet[];
 };
 
 // One draw candidate from the prediction model (a row of its CSV export).

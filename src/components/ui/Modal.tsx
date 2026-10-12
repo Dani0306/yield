@@ -12,7 +12,7 @@ const sizes = {
 };
 
 type ModalProps = {
-  // Small text above the title, e.g. "Progression #2 · Attempt 4".
+  // Small text above the title, e.g. "Flat stake · #0042".
   eyebrow?: React.ReactNode;
   title?: string;
   // "lg" for detail views where the title is the headline.

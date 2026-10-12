@@ -15,18 +15,12 @@ import {
   getInitials,
 } from "@/lib/utils/fn";
 import {
-  STAKE_MULTIPLIER,
+  STAKE_PERCENT_MAX,
   UNITS_PER_BANKROLL,
-  stakeAfterLosses,
-  stopLossCost,
+  flatStake,
   unitValue,
 } from "@/lib/utils/staking";
 import type { User } from "@/types";
-
-// Stakes shown in the bankroll preview: the first bet plus five losses.
-const LADDER_STEPS = 6;
-// Stop counting covered losses here; the figure only matters when low.
-const MAX_COVERED = 50;
 
 // One settings block: what it is on the left, its fields on the right.
 const SettingsSection = ({
@@ -104,26 +98,12 @@ const BankrollSection = ({ user }: { user: User }) => {
   const valid = budget.trim() !== "" && Number.isFinite(value) && value > 0;
   const dirty = valid && value !== saved;
 
-  // The stakes this bankroll gives, and how many losses in a row it covers.
-  const ladder = valid
-    ? Array.from({ length: LADDER_STEPS }, (_, losses) =>
-        stakeAfterLosses(losses, value),
-      )
-    : [];
-  let covered = 0;
-  if (valid) {
-    let spent = 0;
-    while (covered < MAX_COVERED) {
-      spent += stakeAfterLosses(covered, value).amount;
-      if (spent > value) break;
-      covered++;
-    }
-  }
+  const stake = valid ? flatStake(value, user.stake_percent) : null;
 
   return (
     <SettingsSection
       title="Bankroll"
-      description={`The money set aside for the strategy. One unit is 1/${UNITS_PER_BANKROLL} of it, and every stake is worked out from the unit. Changing it changes the stake of your next bets, including in the current progression.`}
+      description={`The money set aside for the strategy. Every stake is a share of it (see Stake), and one unit is 1/${UNITS_PER_BANKROLL} of it. Changing it changes the stake of your next bets.`}
     >
       <div className="max-w-sm">
         <Input
@@ -138,62 +118,27 @@ const BankrollSection = ({ user }: { user: User }) => {
         />
       </div>
 
-      {valid ? (
-        <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-2 gap-6 border-y border-gray-200 py-4">
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs text-gray-500">1 unit</span>
-              <span className="font-mono text-2xl tracking-tight text-black">
-                {formatMoney(unitValue(value))}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs text-gray-500">Covers</span>
-              <span className="font-mono text-2xl tracking-tight text-black">
-                {covered >= MAX_COVERED ? `${MAX_COVERED}+` : covered}
-              </span>
-              <span className="text-xs text-gray-500">losses in a row</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <span className="text-xs text-gray-500">
-              Stake ladder · ×{STAKE_MULTIPLIER} after each loss
+      {stake ? (
+        <div className="grid grid-cols-2 gap-6 border-y border-gray-200 py-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-gray-500">1 unit</span>
+            <span className="font-mono text-2xl tracking-tight text-black">
+              {formatMoney(unitValue(value))}
             </span>
-            <table className="w-full text-sm">
-              <thead className="sr-only">
-                <tr>
-                  <th scope="col">Attempt</th>
-                  <th scope="col">Units</th>
-                  <th scope="col">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ladder.map((stake, losses) => (
-                  <tr
-                    key={losses}
-                    className="border-b border-gray-100 last:border-b-0"
-                  >
-                    <td className="py-2 text-gray-500">
-                      {losses === 0
-                        ? "First bet"
-                        : `After ${losses} loss${losses === 1 ? "" : "es"}`}
-                    </td>
-                    <td className="py-2 text-right font-mono text-gray-500">
-                      {formatUnits(stake.units)}
-                    </td>
-                    <td className="py-2 pl-6 text-right font-mono text-black">
-                      {formatMoney(stake.amount)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-gray-500">Stake per bet</span>
+            <span className="font-mono text-2xl tracking-tight text-black">
+              {formatMoney(stake.amount)}
+            </span>
+            <span className="text-xs text-gray-500">
+              {user.stake_percent}% · {formatUnits(stake.units)}
+            </span>
           </div>
         </div>
       ) : (
         <p className="text-sm text-gray-500">
-          Enter an amount above 0 to see your unit and stakes.
+          Enter an amount above 0 to see your unit and stake.
         </p>
       )}
 
@@ -207,65 +152,69 @@ const BankrollSection = ({ user }: { user: User }) => {
   );
 };
 
-// The stop-loss: how many lost bets a progression can take before it closes.
-const StopLossSection = ({ user }: { user: User }) => {
-  const [saved, setSaved] = useState(user.max_losses);
-  const [maxLosses, setMaxLosses] = useState(String(user.max_losses));
+// The flat stake: the share of the bankroll every bet takes.
+const StakeSection = ({ user }: { user: User }) => {
+  const [saved, setSaved] = useState(user.stake_percent);
+  const [percent, setPercent] = useState(String(user.stake_percent));
   const { isPending, status, save, clearStatus } = useSave();
 
-  const value = Number(maxLosses);
-  const valid = Number.isInteger(value) && value >= 1 && value <= 20;
+  const value = Number(percent);
+  const valid =
+    percent.trim() !== "" &&
+    Number.isFinite(value) &&
+    value > 0 &&
+    value <= STAKE_PERCENT_MAX &&
+    Math.round(value * 100) === value * 100;
   const dirty = valid && value !== saved;
 
-  const cost = valid ? stopLossCost(value, user.total_budget) : null;
-  const lastStake = valid
-    ? stakeAfterLosses(value - 1, user.total_budget)
-    : null;
-  const bankShare =
-    cost && user.total_budget > 0 ? (cost.amount / user.total_budget) * 100 : 0;
+  const stake = valid ? flatStake(user.total_budget, value) : null;
+  // Losing bets in a row the bankroll can pay for at this stake.
+  const covered =
+    stake && stake.amount > 0
+      ? Math.floor(user.total_budget / stake.amount)
+      : 0;
 
   return (
     <SettingsSection
-      title="Stop-loss"
-      description="A progression closes as lost after this many lost bets, and the next bet starts a new progression at 1 unit. It caps what one bad run can cost. A progression keeps the limit it started with, so a change applies from the next progression on."
+      title="Stake"
+      description="Flat stakes: every bet stakes this share of the bankroll, win or lose, so no single bad run can wipe it out. A change applies to the bets you add from then on."
     >
       <div className="max-w-sm">
         <Input
-          label="Losses before stopping (1–20)"
-          name="max_losses"
+          label={`Stake (% of bankroll, up to ${STAKE_PERCENT_MAX})`}
+          name="stake_percent"
           type="number"
-          value={maxLosses}
+          value={percent}
           setValue={(next) => {
             clearStatus();
-            setMaxLosses(next);
+            setPercent(next);
           }}
         />
       </div>
 
-      {cost && lastStake ? (
+      {stake ? (
         <div className="grid grid-cols-2 gap-6 border-y border-gray-200 py-4">
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-gray-500">Last stake</span>
+            <span className="text-xs text-gray-500">Stake per bet</span>
             <span className="font-mono text-2xl tracking-tight text-black">
-              {formatMoney(lastStake.amount)}
+              {formatMoney(stake.amount)}
             </span>
             <span className="text-xs text-gray-500">
-              {formatUnits(lastStake.units)}
+              {formatUnits(stake.units)}
             </span>
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-gray-500">Worst case</span>
+            <span className="text-xs text-gray-500">Bankroll covers</span>
             <span className="font-mono text-2xl tracking-tight text-black">
-              {formatMoney(cost.amount)}
+              {covered}
             </span>
-            <span className="text-xs text-gray-500">
-              {formatUnits(cost.units)} · {bankShare.toFixed(1)}% of bankroll
-            </span>
+            <span className="text-xs text-gray-500">losing bets</span>
           </div>
         </div>
       ) : (
         <p className="text-sm text-gray-500">
-          Enter a whole number from 1 to 20.
+          Enter a % above 0 and up to {STAKE_PERCENT_MAX}, with at most 2
+          decimals.
         </p>
       )}
 
@@ -273,7 +222,7 @@ const StopLossSection = ({ user }: { user: User }) => {
         dirty={dirty}
         isPending={isPending}
         status={status}
-        onSave={() => save({ max_losses: value }, () => setSaved(value))}
+        onSave={() => save({ stake_percent: value }, () => setSaved(value))}
       />
     </SettingsSection>
   );
@@ -445,16 +394,16 @@ const AccountSection = ({ user }: { user: User }) => {
   );
 };
 
-// The settings page: bankroll (drives every stake), stop-loss, profile,
-// notifications and account.
+// The settings page: bankroll and stake (together they set every bet's
+// stake), profile, notifications and account.
 const SettingsContent = ({ user }: { user: User }) => (
   <PageContainer
     title="Settings"
-    description="Your bankroll, stop-loss, profile, notifications and account."
+    description="Your bankroll, stake, profile, notifications and account."
   >
     <div className="flex flex-col">
       <BankrollSection user={user} />
-      <StopLossSection user={user} />
+      <StakeSection user={user} />
       <ProfileSection user={user} />
       <NotificationsSection user={user} />
       <AccountSection user={user} />
