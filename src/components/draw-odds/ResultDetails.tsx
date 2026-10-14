@@ -10,6 +10,7 @@ import {
   formatGameDate,
   formatPercent,
   hasKickedOff,
+  withSign,
 } from "@/lib/utils/fn";
 import type { ModelResult, ResultBet } from "@/types";
 
@@ -32,6 +33,19 @@ const share = (value: number | null) =>
 
 const pct = (value: number | null) =>
   value === null ? "–" : formatPercent(value);
+
+// Percentage points and EV, always signed: +3.9 pts, −5.5%.
+const points = (value: number | null) =>
+  value === null ? "–" : `${withSign(value, (n) => n.toFixed(2))} pts`;
+
+const signedPct = (value: number | null) =>
+  value === null ? "–" : withSign(value, (n) => formatPercent(n));
+
+const odds = (value: number | null) =>
+  value === null ? "–" : value.toFixed(2);
+
+const dateTime = (value: string | null) =>
+  value === null ? "–" : formatDateTime(value);
 
 const yesNo = (value: boolean | null) =>
   value === null ? "–" : value ? "Yes" : "No";
@@ -125,6 +139,106 @@ const DrawHighlight = ({ result }: { result: ModelResult }) => {
     </section>
   );
 };
+
+// The value finder's verdict, then every figure behind it: the model
+// against the market, the prices and the expected value.
+const ValueFinder = ({ result }: { result: ModelResult }) => (
+  <section className="flex flex-col">
+    <SectionTitle>Value</SectionTitle>
+    <div className="flex flex-col gap-1 border-b border-gray-200 pb-4">
+      <span
+        className={`font-mono text-2xl tracking-tight ${
+          result.decision === "BET"
+            ? "font-medium text-black"
+            : result.decision === "SKIP"
+              ? "text-gray-400"
+              : "text-gray-700"
+        }`}
+      >
+        {result.decision ?? "No decision"}
+      </span>
+      <span className="text-sm text-gray-500">
+        {result.reason ?? "Not checked by the value finder."}
+      </span>
+    </div>
+    <dl className="grid gap-x-12 sm:grid-cols-2">
+      <div>
+        <Detail label="Model draw" value={pct(result.model_draw_pct)} mono />
+        <Detail
+          label="Market draw (fair)"
+          value={
+            result.market_fair_pct === null ? (
+              "–"
+            ) : (
+              <>
+                {pct(result.market_fair_pct)}
+                {result.market_source && (
+                  <span className="font-sans text-gray-500">
+                    {" "}
+                    · {result.market_source}
+                  </span>
+                )}
+              </>
+            )
+          }
+          mono
+        />
+        <Detail label="Blended draw" value={pct(result.p_blend_pct)} mono />
+        <Detail label="Edge" value={points(result.edge_pp)} mono />
+        <Detail
+          label="Market margin"
+          value={pct(result.market_margin_pct)}
+          mono
+        />
+        <Detail
+          label="Bookmakers"
+          value={result.bookmakers_count ?? "–"}
+          mono
+        />
+        <Detail label="Odds fetched" value={dateTime(result.odds_fetched_at)} />
+      </div>
+      <div>
+        <Detail
+          label="Best odds"
+          value={
+            result.best_odds === null ? (
+              "–"
+            ) : (
+              <>
+                {odds(result.best_odds)}
+                {result.best_bookmaker && (
+                  <span className="font-sans text-gray-500">
+                    {" "}
+                    · {result.best_bookmaker}
+                  </span>
+                )}
+              </>
+            )
+          }
+          mono
+        />
+        <Detail
+          label="Best implied"
+          value={pct(result.best_implied_pct)}
+          mono
+        />
+        <Detail label="Average odds" value={odds(result.avg_draw_odds)} mono />
+        <Detail label="Fair odds" value={odds(result.fair_odds)} mono />
+        <Detail label="EV (blended)" value={signedPct(result.ev_pct)} mono />
+        <Detail
+          label="EV (model)"
+          value={signedPct(result.model_ev_pct)}
+          mono
+        />
+        <Detail
+          label="EV (market)"
+          value={signedPct(result.market_ev_pct)}
+          mono
+        />
+      </div>
+    </dl>
+  </section>
+);
 
 // Home and away side by side, one row per measure.
 const TeamComparison = ({ result }: { result: ModelResult }) => {
@@ -246,6 +360,8 @@ const ResultDetails = ({ result, clash, bet, onClose }: ResultDetailsProps) => {
 
         <DrawHighlight result={result} />
 
+        <ValueFinder result={result} />
+
         <section className="flex flex-col">
           <SectionTitle>Teams</SectionTitle>
           <TeamComparison result={result} />
@@ -285,6 +401,7 @@ const ResultDetails = ({ result, clash, bet, onClose }: ResultDetailsProps) => {
               <Detail label="League" value={result.league} />
               <Detail label="League id" value={result.league_id} mono />
               <Detail label="Match date" value={matchDay(result.match_date)} />
+              <Detail label="Kick-off" value={dateTime(result.kick_off)} />
             </div>
             <div>
               <Detail label="Kick-off (source)" value={result.game_date} mono />
@@ -293,6 +410,10 @@ const ResultDetails = ({ result, clash, bet, onClose }: ResultDetailsProps) => {
                 value={formatDateTime(result.scraped_at)}
               />
               <Detail label="Result id" value={`#${result.id}`} mono />
+              <Detail
+                label="Reminder sent"
+                value={dateTime(result.reminder_sent_at)}
+              />
             </div>
           </dl>
         </section>
