@@ -43,7 +43,7 @@ const DashboardContent = ({ data }: { data: DashboardData }) => {
         <EdgeCheck
           edge={edge}
           settledBets={overview.settledBets}
-          hitRateTimesOdds={overview.hitRateTimesOdds}
+          flatYieldPercent={overview.flatYieldPercent}
         />
         <Section
           title="Recent results"

@@ -89,7 +89,7 @@ export const dashboardData: DashboardData = {
     drawHitRatePercent: 31.11, // 14 draws / 45 settled bets
     settledBets: 45,
     settledAverageOdds: 3.31,
-    hitRateTimesOdds: 1.03, // 14 / 45 × 3.31
+    flatYieldPercent: 3, // about 14 / 45 × 3.31 − 1
   },
 
   edge: {

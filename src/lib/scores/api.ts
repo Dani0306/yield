@@ -1,6 +1,6 @@
 import "server-only";
 
-import { teamWords } from "@/lib/odds/matching";
+import { teamWords } from "./teams";
 import { parseScore } from "@/lib/utils/bets";
 import type { LiveScore } from "@/types";
 

@@ -1,13 +1,10 @@
 "use client";
 
-import { useTransition, useState } from "react";
-import { refreshResultOdds } from "@/actions/odds/refreshResultOdds";
 import { formatShortDate } from "@/lib/utils/fn";
 import type { ResultOddsSummary } from "@/types";
 
 type OddsComparisonProps = {
-  resultId: number;
-  initial: ResultOddsSummary;
+  summary: ResultOddsSummary;
   // The bookmaker currently chosen in the form, to highlight its row.
   selectedBookmaker: string;
   onPick: (bookmaker: string, drawOdds: number) => void;
@@ -24,31 +21,19 @@ const ago = (iso: string) => {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 };
 
-// Each bookmaker's draw price for the match, best first. Picking a row fills
-// the bookmaker and odds in the bet form.
+// Each bookmaker's draw price stored for the match, best first. Picking a
+// row fills the bookmaker and odds in the bet form. Read-only: this app no
+// longer fetches odds (the model project does).
 const OddsComparison = ({
-  resultId,
-  initial,
+  summary,
   selectedBookmaker,
   onPick,
 }: OddsComparisonProps) => {
-  const [summary, setSummary] = useState(initial);
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  const refresh = () =>
-    startTransition(async () => {
-      setError(null);
-      const { odds, error } = await refreshResultOdds(resultId);
-      if (error || !odds) return setError(error);
-      setSummary(odds);
-    });
-
   const { odds, matched, checkedAt } = summary;
   const best = odds[0]?.draw_odds;
 
   const emptyMessage = !checkedAt
-    ? "Odds haven't been collected for this match yet."
+    ? "No odds stored for this match."
     : !matched
       ? "This match wasn't found on the odds provider."
       : "No bookmaker offers a draw price for this match yet.";
@@ -62,17 +47,9 @@ const OddsComparison = ({
         <span className="text-xs font-normal text-gray-800">
           Draw odds by bookmaker
         </span>
-        <span className="flex items-baseline gap-2 text-xs text-gray-500">
-          {checkedAt && <span>Updated {ago(checkedAt)}</span>}
-          <button
-            type="button"
-            onClick={refresh}
-            disabled={isPending}
-            className="cursor-pointer text-black underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:text-gray-400"
-          >
-            {isPending ? "Refreshing…" : "Refresh"}
-          </button>
-        </span>
+        {checkedAt && (
+          <span className="text-xs text-gray-500">Updated {ago(checkedAt)}</span>
+        )}
       </div>
 
       {odds.length === 0 ? (
@@ -118,8 +95,6 @@ const OddsComparison = ({
           })}
         </ul>
       )}
-
-      {error && <p className="text-xs text-red-700">{error}</p>}
     </section>
   );
 };

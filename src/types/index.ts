@@ -129,11 +129,11 @@ export type DashboardData = {
     totalStaked: number;
     drawHitRatePercent: number;
     settledBets: number;
-    // Mean odds of the settled bets, and the hit rate times them: what each
-    // peso staked comes back as at flat stakes. Above 1 the picks make
+    // Mean odds of the settled bets, and the yield: profit per bet as a % of
+    // the stake, as if every bet had the same stake. Above 0 the picks make
     // money. null before the first settled bet.
     settledAverageOdds: number | null;
-    hitRateTimesOdds: number | null;
+    flatYieldPercent: number | null;
   };
   edge: {
     estimatedDrawRatePercent: number;

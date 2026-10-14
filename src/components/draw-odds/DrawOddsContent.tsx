@@ -4,7 +4,12 @@ import { useFilters } from "@/hooks/shared/useFilters";
 import PageContainer from "../layout/PageContainer";
 import Table, { type TableColumn } from "../layout/table/Table";
 import ResultActions from "./ResultActions";
-import { formatGameDate, formatPercent, hasKickedOff } from "@/lib/utils/fn";
+import {
+  formatGameDate,
+  formatPercent,
+  hasKickedOff,
+  withSign,
+} from "@/lib/utils/fn";
 import type { ModelResult, ResultBet, ResultOddsSummary } from "@/types";
 import { useModal } from "../providers/ModalProvider";
 import { useState } from "react";
@@ -22,43 +27,93 @@ type Row = ModelResult & {
   odds: ResultOddsSummary | null;
 };
 
+// The value finder's figures, from the model project's import. Empty when
+// the game had no odds.
+const pct = (value: number | null) =>
+  value === null ? "–" : formatPercent(value, 1);
+
+const ev = (value: number | null) =>
+  value === null ? "–" : withSign(value, (n) => formatPercent(n, 1));
+
+// BET stands out, WATCH is plain, SKIP fades. The word always says it, and
+// the reason shows on hover.
+const decisionClass: Record<string, string> = {
+  BET: "font-medium text-black",
+  WATCH: "text-gray-700",
+  SKIP: "text-gray-400",
+};
+
+const Decision = ({ r }: { r: Row }) =>
+  r.decision ? (
+    <span
+      title={r.reason ?? undefined}
+      className={decisionClass[r.decision] ?? "text-gray-700"}
+    >
+      {r.decision}
+    </span>
+  ) : (
+    <span className="text-gray-400">–</span>
+  );
+
 const columns: TableColumn<Row>[] = [
-  { key: "home_team", header: "Home", width: "18%" },
-  { key: "away_team", header: "Away", width: "18%" },
+  { key: "home_team", header: "Home", width: "13%" },
+  { key: "away_team", header: "Away", width: "13%" },
   {
     key: "game_date",
     header: "Date",
-    width: "13%",
+    width: "10%",
     cellClassName: "text-gray-500",
     render: (r) => formatGameDate(r.game_date),
   },
   {
-    key: "rank_gap",
-    header: "Rank gap",
-    width: "9%",
-    align: "right",
-    cellClassName: "font-mono",
-    render: (r) => r.rank_gap ?? "-",
-  },
-  {
-    key: "league_draw_rate",
-    header: "League draws",
-    width: "12%",
-    align: "right",
-    cellClassName: "font-mono text-gray-500",
-    // Stored as a share (0.2614); shown as a percentage like Draw %.
-    render: (r) =>
-      r.league_draw_rate === null
-        ? "-"
-        : formatPercent(r.league_draw_rate * 100, 1),
-  },
-  {
     key: "draw_percentage",
-    header: "Draw %",
-    width: "12%",
+    header: "Model",
+    width: "8%",
     align: "right",
     cellClassName: "font-mono font-medium text-black",
     render: (r) => formatPercent(r.draw_percentage, 1),
+  },
+  {
+    key: "market_fair_pct",
+    header: "Market",
+    width: "8%",
+    align: "right",
+    cellClassName: "font-mono text-gray-500",
+    render: (r) => pct(r.market_fair_pct),
+  },
+  {
+    key: "best_odds",
+    header: "Best odds",
+    width: "12%",
+    align: "right",
+    cellClassName: "font-mono",
+    render: (r) =>
+      r.best_odds === null ? (
+        "–"
+      ) : (
+        <span className="flex flex-col items-end">
+          <span className="text-black">{r.best_odds.toFixed(2)}</span>
+          {r.best_bookmaker && (
+            <span className="font-sans text-xs text-gray-500">
+              {r.best_bookmaker}
+            </span>
+          )}
+        </span>
+      ),
+  },
+  {
+    key: "ev_pct",
+    header: "EV",
+    width: "8%",
+    align: "right",
+    cellClassName: "font-mono text-black",
+    render: (r) => ev(r.ev_pct),
+  },
+  {
+    key: "decision",
+    header: "Decision",
+    width: "10%",
+    render: (r) => <Decision r={r} />,
   },
   {
     key: "action",
@@ -78,7 +133,7 @@ const MobileRow = (r: Row) => (
         {r.home_team} v {r.away_team}
       </span>
       <span className="truncate text-xs text-gray-500">
-        {formatGameDate(r.game_date)} · Rank gap {r.rank_gap ?? "–"}
+        {formatGameDate(r.game_date)} · <Decision r={r} />
       </span>
     </div>
     <div className="flex shrink-0 flex-col items-end gap-1">
@@ -86,10 +141,9 @@ const MobileRow = (r: Row) => (
         {formatPercent(r.draw_percentage, 1)}
       </span>
       <span className="font-mono text-xs text-gray-500">
-        League{" "}
-        {r.league_draw_rate === null
-          ? "-"
-          : formatPercent(r.league_draw_rate * 100, 1)}
+        {r.best_odds === null
+          ? "No odds"
+          : `${r.best_odds.toFixed(2)} · EV ${ev(r.ev_pct)}`}
       </span>
     </div>
     <ResultActions result={r} clash={r.clash} bet={r.bet} odds={r.odds} />

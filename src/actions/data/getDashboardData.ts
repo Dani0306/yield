@@ -96,12 +96,15 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     drawHitRatePercent,
     settledBets: settled.length,
     settledAverageOdds,
-    // Exact hit rate, not the rounded %, so 1.03 means 1.03.
-    hitRateTimesOdds:
-      settledAverageOdds === null
-        ? null
-        : Math.round((won.length / settled.length) * settledAverageOdds * 1000) /
-          1000,
+    // Every settled bet counted as one equal stake: +odds − 1 for a win, −1
+    // for a loss, averaged. Unlike ROI, the bigger progression stakes don't
+    // weigh more.
+    flatYieldPercent: settled.length
+      ? percent(
+          sum(settled, (bet) => (bet.status === "won" ? bet.odds - 1 : -1)),
+          settled.length,
+        )
+      : null,
   };
 
   // ── Edge ───────────────────────────────────────────────────

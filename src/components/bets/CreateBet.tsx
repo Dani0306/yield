@@ -117,8 +117,7 @@ const CreateBet = ({
         </div>
         {modelResultId !== undefined && resultOdds && (
           <OddsComparison
-            resultId={modelResultId}
-            initial={resultOdds}
+            summary={resultOdds}
             selectedBookmaker={bookmaker}
             onPick={(pickedBookmaker, drawOdds) => {
               setBookmaker(pickedBookmaker);

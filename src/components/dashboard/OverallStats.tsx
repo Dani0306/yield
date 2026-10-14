@@ -51,16 +51,21 @@ const OverallStats = ({
           sub={`${draws} of ${overview.settledBets} settled`}
         />
         <Stat
-          label="Hit rate × odds"
+          label="Yield"
           value={
-            overview.hitRateTimesOdds === null
+            overview.flatYieldPercent === null
               ? "–"
-              : overview.hitRateTimesOdds.toFixed(2)
+              : signedPercent(overview.flatYieldPercent)
+          }
+          valueClassName={
+            overview.flatYieldPercent === null
+              ? undefined
+              : signClass(overview.flatYieldPercent)
           }
           sub={
             overview.settledAverageOdds === null
               ? "no settled bets yet"
-              : `average odds ${overview.settledAverageOdds.toFixed(2)} · break-even 1.00`
+              : `per bet, flat · average odds ${overview.settledAverageOdds.toFixed(2)}`
           }
         />
       </StatGrid>
